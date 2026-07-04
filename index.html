@@ -211,6 +211,24 @@
       </div>
     </div>
 
+    <h2>Preise (optional)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="pricePiece">€ pro Platte</label>
+        <input type="number" id="pricePiece" step="0.01" min="0" placeholder="z. B. 12.50">
+      </div>
+      <div class="field">
+        <label for="priceM2">€ pro m² (alternativ)</label>
+        <input type="number" id="priceM2" step="0.01" min="0" placeholder="z. B. 39.90">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="priceBorder">€ pro Randstein</label>
+        <input type="number" id="priceBorder" step="0.01" min="0" placeholder="z. B. 4.99">
+      </div>
+    </div>
+
     <div class="results" id="results"></div>
   </div>
 
@@ -231,7 +249,8 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const inputs = ["terraceW", "terraceD", "tileW", "tileD", "joint", "borderT", "borderL"];
+  const inputs = ["terraceW", "terraceD", "tileW", "tileD", "joint", "borderT", "borderL",
+                  "pricePiece", "priceM2", "priceBorder"];
 
   const fmt = (n, digits = 0) =>
     n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -258,6 +277,14 @@
     };
     if (Object.values(v).some((x) => !isFinite(x) || x < 0)) return null;
     if (v.W <= 0 || v.D <= 0 || v.tileW <= 0 || v.tileD <= 0) return null;
+    // Preisfelder sind optional – leer bedeutet: keine Preisberechnung
+    const opt = (id) => {
+      const x = parseFloat($(id).value);
+      return isFinite(x) && x > 0 ? x : 0;
+    };
+    v.pricePiece = opt("pricePiece");
+    v.priceM2 = opt("priceM2");
+    v.priceBorder = opt("priceBorder");
     return v;
   }
 
@@ -285,13 +312,31 @@
         Math.ceil(sideLen / v.borderL) * 2 + Math.ceil(frontLen / v.borderL);
     }
 
+    // Optimiert: Zuschnitte aus möglichst wenigen Platten schneiden.
+    // Die letzte Spalte braucht ay.n Streifen von ax.last Breite – aus einer
+    // Platte lassen sich floor(tileW / ax.last) davon schneiden. Analog für
+    // die letzte Reihe (das Eckstück fällt aus einem Spaltenstreifen mit ab).
+    let colTiles = 0, rowTiles = 0;
+    if (ax.cut) colTiles = Math.ceil(ay.n / Math.max(1, Math.floor(v.tileW / ax.last)));
+    if (ay.cut) rowTiles = Math.ceil(fullCols / Math.max(1, Math.floor(v.tileD / ay.last)));
+    const optTotal = full + colTiles + rowTiles;
+
+    // Preise: Stückpreis hat Vorrang, sonst m²-Preis × Plattenfläche
+    const tileArea = (v.tileW * v.tileD) / 10000; // m²
+    const pricePerTile = v.pricePiece > 0 ? v.pricePiece : v.priceM2 * tileArea;
+    const costBorder = v.priceBorder * borderCount;
+
     return {
       innerW, innerD, ax, ay,
       total, full, cut: total - full,
       reserve: Math.ceil(total * 1.05),
+      optTotal, optSaved: total - optTotal,
       areaTotal: (v.W * v.D) / 10000,
       areaTiles: (innerW * innerD) / 10000,
       borderLen, borderCount,
+      pricePerTile, costBorder,
+      costTiles: pricePerTile * total,
+      costTilesOpt: pricePerTile * optTotal,
     };
   }
 
@@ -310,14 +355,31 @@
       <div class="result-small"><span>davon zu schneiden</span><span class="value">${fmt(r.cut)}</span></div>
       <div class="result-small"><span>Empfehlung inkl. 5 % Reserve</span><span class="value">${fmt(r.reserve)}</span></div>
       <div class="result-big">
+        <span>Optimiert (Reste verwenden)</span><span class="value">${fmt(r.optTotal)}</span>
+      </div>
+      <div class="result-small"><span>Ersparnis gegenüber Standard</span><span class="value">${fmt(r.optSaved)} Platten</span></div>
+      <div class="result-big">
         <span>Randsteine</span><span class="value">${fmt(r.borderCount)}</span>
       </div>
       <div class="result-small"><span>Randlänge gesamt</span><span class="value">${fmt(r.borderLen / 100, 2)} m</span></div>
       <div class="result-small"><span>Terrassenfläche</span><span class="value">${fmt(r.areaTotal, 2)} m²</span></div>
       <div class="result-small"><span>Plattenfläche (innen)</span><span class="value">${fmt(r.areaTiles, 2)} m²</span></div>
+      ${r.pricePerTile > 0 || r.costBorder > 0 ? `
+      <div class="result-big">
+        <span>Kosten gesamt</span><span class="value">${fmt(r.costTiles + r.costBorder, 2)} €</span>
+      </div>
+      ${r.pricePerTile > 0 ? `
+      <div class="result-small"><span>Preis pro Platte</span><span class="value">${fmt(r.pricePerTile, 2)} €</span></div>
+      <div class="result-small"><span>Platten (${fmt(r.total)} Stk.)</span><span class="value">${fmt(r.costTiles, 2)} €</span></div>
+      <div class="result-small"><span>Platten optimiert (${fmt(r.optTotal)} Stk.)</span><span class="value">${fmt(r.costTilesOpt, 2)} €</span></div>` : ""}
+      ${r.costBorder > 0 ? `
+      <div class="result-small"><span>Randsteine (${fmt(r.borderCount)} Stk.)</span><span class="value">${fmt(r.costBorder, 2)} €</span></div>` : ""}
+      ${r.pricePerTile > 0 && r.optSaved > 0 ? `
+      <div class="result-small"><span>Ersparnis optimiert</span><span class="value">${fmt(r.costTiles - r.costTilesOpt, 2)} €</span></div>` : ""}` : ""}
       <div class="hint">Letzte Spalte: ${r.ax.cut ? "Zuschnitt auf " + fmt(r.ax.last, 1) + " cm" : "passt ohne Schnitt"} ·
         letzte Reihe: ${r.ay.cut ? "Zuschnitt auf " + fmt(r.ay.last, 1) + " cm" : "passt ohne Schnitt"}.
-        Geschnittene Reststücke lassen sich teils wiederverwenden – die Reserve deckt Bruch und Fehlschnitte ab.</div>
+        Die optimierte Zahl geht davon aus, dass aus einer Platte mehrere Zuschnitte
+        geschnitten werden (ohne Sägeverlust) – Bruch und Fehlschnitte sind darin nicht enthalten.</div>
     `;
   }
 
