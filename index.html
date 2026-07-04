@@ -95,6 +95,18 @@
     cursor: pointer;
   }
   button.swap:hover { border-color: var(--accent); color: var(--accent); }
+  button.mini {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fdfcfa;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  button.mini:hover { border-color: var(--accent); }
   .results { margin-top: 0.5rem; }
   .result-big {
     display: flex;
@@ -254,6 +266,8 @@
 
   const fmt = (n, digits = 0) =>
     n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const fmtM = (m) =>
+    m.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 3 }) + " m";
 
   // Wie viele Platten braucht eine Achse, und wie groß ist das letzte (evtl.
   // geschnittene) Stück? Alle Maße in cm.
@@ -321,6 +335,21 @@
     if (ay.cut) rowTiles = Math.ceil(fullCols / Math.max(1, Math.floor(v.tileD / ay.last)));
     const optTotal = full + colTiles + rowTiles;
 
+    // Schnittfreie Maße: Terrassenmaß so anpassen, dass ganze Platten exakt
+    // aufgehen – jeweils nächstkleineres und nächstgrößeres Maß (in m, außen
+    // inkl. Randsteine)
+    const suggest = (inner, tile, joint, extra) => {
+      const pitch = tile + joint;
+      const nDown = Math.max(1, Math.floor((inner + joint + 0.001) / pitch));
+      const size = (n) => (n * tile + (n - 1) * joint + extra) / 100;
+      return {
+        down: { n: nDown, m: size(nDown) },
+        up: { n: nDown + 1, m: size(nDown + 1) },
+      };
+    };
+    const suggestW = ax.cut ? suggest(innerW, v.tileW, v.joint, 2 * v.borderT) : null;
+    const suggestD = ay.cut ? suggest(innerD, v.tileD, v.joint, v.borderT) : null;
+
     // Preise: Stückpreis hat Vorrang, sonst m²-Preis × Plattenfläche
     const tileArea = (v.tileW * v.tileD) / 10000; // m²
     const pricePerTile = v.pricePiece > 0 ? v.pricePiece : v.priceM2 * tileArea;
@@ -331,6 +360,7 @@
       total, full, cut: total - full,
       reserve: Math.ceil(total * 1.05),
       optTotal, optSaved: total - optTotal,
+      suggestW, suggestD,
       areaTotal: (v.W * v.D) / 10000,
       areaTiles: (innerW * innerD) / 10000,
       borderLen, borderCount,
@@ -358,6 +388,22 @@
         <span>Optimiert (Reste verwenden)</span><span class="value">${fmt(r.optTotal)}</span>
       </div>
       <div class="result-small"><span>Ersparnis gegenüber Standard</span><span class="value">${fmt(r.optSaved)} Platten</span></div>
+      ${!r.suggestW && !r.suggestD ? `
+      <div class="result-small"><span>Ohne Zuschnitt</span><span class="value">Maße passen bereits ✓</span></div>` : `
+      <div class="result-big"><span>Terrassenmaß ohne Zuschnitt</span><span></span></div>
+      ${r.suggestW ? `
+      <div class="result-small"><span>Breite</span><span class="value">
+        <button class="mini" data-target="terraceW" data-value="${r.suggestW.down.m.toFixed(3)}" title="${fmt(r.suggestW.down.n)} Spalten">${fmtM(r.suggestW.down.m)}</button> oder
+        <button class="mini" data-target="terraceW" data-value="${r.suggestW.up.m.toFixed(3)}" title="${fmt(r.suggestW.up.n)} Spalten">${fmtM(r.suggestW.up.m)}</button>
+      </span></div>` : `
+      <div class="result-small"><span>Breite</span><span class="value">passt bereits ✓</span></div>`}
+      ${r.suggestD ? `
+      <div class="result-small"><span>Tiefe</span><span class="value">
+        <button class="mini" data-target="terraceD" data-value="${r.suggestD.down.m.toFixed(3)}" title="${fmt(r.suggestD.down.n)} Reihen">${fmtM(r.suggestD.down.m)}</button> oder
+        <button class="mini" data-target="terraceD" data-value="${r.suggestD.up.m.toFixed(3)}" title="${fmt(r.suggestD.up.n)} Reihen">${fmtM(r.suggestD.up.m)}</button>
+      </span></div>` : `
+      <div class="result-small"><span>Tiefe</span><span class="value">passt bereits ✓</span></div>`}
+      <div class="result-small"><span></span><span>Klick übernimmt das Maß</span></div>`}
       <div class="result-big">
         <span>Randsteine</span><span class="value">${fmt(r.borderCount)}</span>
       </div>
@@ -466,6 +512,14 @@
   }
 
   inputs.forEach((id) => $(id).addEventListener("input", update));
+
+  // Klick auf ein vorgeschlagenes Maß übernimmt es ins Eingabefeld
+  $("results").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-target]");
+    if (!btn) return;
+    $(btn.dataset.target).value = btn.dataset.value;
+    update();
+  });
 
   $("swapBtn").addEventListener("click", () => {
     const a = $("tileW").value;
