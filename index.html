@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrassenhelfer – Plattenrechner</title>
+<style>
+  :root {
+    --bg: #f4f1ec;
+    --card: #ffffff;
+    --ink: #2b2a27;
+    --muted: #6f6a61;
+    --accent: #b3562e;
+    --tile: #ded6c8;
+    --tile-stroke: #b8ac98;
+    --tile-cut: #f0e3d2;
+    --border-stone: #8d8578;
+    --line: #e3ddd2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  header {
+    padding: 1.5rem 1rem 0.5rem;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  header p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0.5rem 0 0.5rem;
+  }
+  .card h2:first-child { margin-top: 0; }
+  .row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .field { flex: 1; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+  }
+  .field input {
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    font-size: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fdfcfa;
+    color: var(--ink);
+  }
+  .field input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+  button.swap {
+    width: 100%;
+    padding: 0.4rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fdfcfa;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.swap:hover { border-color: var(--accent); color: var(--accent); }
+  .results { margin-top: 0.5rem; }
+  .result-big {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .result-big .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .result-small {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 0.15rem 0;
+  }
+  .result-small .value { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .error {
+    color: #a4302a;
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+  }
+  #viz { width: 100%; }
+  #viz svg { width: 100%; height: auto; display: block; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .legend i {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1px solid var(--tile-stroke);
+  }
+  footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🪨 Terrassenhelfer</h1>
+  <p>Plattenbedarf berechnen &amp; Verlegung visualisieren</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Terrasse</h2>
+    <div class="row">
+      <div class="field">
+        <label for="terraceW">Breite (m)</label>
+        <input type="number" id="terraceW" value="5.10" step="0.01" min="0.1">
+      </div>
+      <div class="field">
+        <label for="terraceD">Tiefe (m)</label>
+        <input type="number" id="terraceD" value="4.55" step="0.01" min="0.1">
+      </div>
+    </div>
+
+    <h2>Platten</h2>
+    <div class="row">
+      <div class="field">
+        <label for="tileW">Breite (cm)</label>
+        <input type="number" id="tileW" value="60" step="0.1" min="1">
+      </div>
+      <div class="field">
+        <label for="tileD">Tiefe (cm)</label>
+        <input type="number" id="tileD" value="40" step="0.1" min="1">
+      </div>
+    </div>
+    <button class="swap" id="swapBtn" type="button">⇄ Platten um 90° drehen</button>
+    <div class="row">
+      <div class="field">
+        <label for="joint">Fugenbreite (mm)</label>
+        <input type="number" id="joint" value="3" step="0.5" min="0">
+      </div>
+    </div>
+
+    <h2>Randsteine (vorne, links &amp; rechts)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="borderT">Dicke (cm)</label>
+        <input type="number" id="borderT" value="5" step="0.5" min="0">
+      </div>
+      <div class="field">
+        <label for="borderL">Länge pro Stein (cm)</label>
+        <input type="number" id="borderL" value="100" step="1" min="1">
+      </div>
+    </div>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="card">
+    <div id="viz"></div>
+    <div class="legend">
+      <span><i style="background:var(--tile)"></i> ganze Platte</span>
+      <span><i style="background:var(--tile-cut)"></i> geschnittene Platte</span>
+      <span><i style="background:var(--border-stone); border-color:#6e675c"></i> Randstein</span>
+    </div>
+  </div>
+</main>
+
+<footer>Hinten liegt die Hauswand – Randsteine kommen vorne, links und rechts.</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const inputs = ["terraceW", "terraceD", "tileW", "tileD", "joint", "borderT", "borderL"];
+
+  const fmt = (n, digits = 0) =>
+    n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+  // Wie viele Platten braucht eine Achse, und wie groß ist das letzte (evtl.
+  // geschnittene) Stück? Alle Maße in cm.
+  function axis(inner, tile, joint) {
+    const pitch = tile + joint;
+    const n = Math.max(1, Math.ceil((inner + joint - 0.001) / pitch));
+    const last = inner - (n - 1) * pitch;
+    const cut = last < tile - 0.05;
+    return { n, last, cut, pitch };
+  }
+
+  function readValues() {
+    const v = {
+      W: parseFloat($("terraceW").value) * 100, // m → cm
+      D: parseFloat($("terraceD").value) * 100,
+      tileW: parseFloat($("tileW").value),
+      tileD: parseFloat($("tileD").value),
+      joint: parseFloat($("joint").value) / 10, // mm → cm
+      borderT: parseFloat($("borderT").value),
+      borderL: parseFloat($("borderL").value),
+    };
+    if (Object.values(v).some((x) => !isFinite(x) || x < 0)) return null;
+    if (v.W <= 0 || v.D <= 0 || v.tileW <= 0 || v.tileD <= 0) return null;
+    return v;
+  }
+
+  function calc(v) {
+    const innerW = v.W - 2 * v.borderT; // links + rechts Randstein
+    const innerD = v.D - v.borderT;     // vorne Randstein, hinten Hauswand
+    if (innerW <= 0 || innerD <= 0) return { error: "Randsteine sind dicker als die Terrasse." };
+
+    const ax = axis(innerW, v.tileW, v.joint); // Spalten
+    const ay = axis(innerD, v.tileD, v.joint); // Reihen
+
+    const total = ax.n * ay.n;
+    const fullCols = ax.n - (ax.cut ? 1 : 0);
+    const fullRows = ay.n - (ay.cut ? 1 : 0);
+    const full = fullCols * fullRows;
+
+    // Randsteine: links + rechts über die volle Tiefe, vorne dazwischen
+    let borderLen = 0;
+    let borderCount = 0;
+    if (v.borderT > 0 && v.borderL > 0) {
+      const sideLen = v.D;
+      const frontLen = v.W - 2 * v.borderT;
+      borderLen = 2 * sideLen + frontLen;
+      borderCount =
+        Math.ceil(sideLen / v.borderL) * 2 + Math.ceil(frontLen / v.borderL);
+    }
+
+    return {
+      innerW, innerD, ax, ay,
+      total, full, cut: total - full,
+      reserve: Math.ceil(total * 1.05),
+      areaTotal: (v.W * v.D) / 10000,
+      areaTiles: (innerW * innerD) / 10000,
+      borderLen, borderCount,
+    };
+  }
+
+  function renderResults(v, r) {
+    const el = $("results");
+    if (r.error) {
+      el.innerHTML = '<div class="error">⚠️ ' + r.error + "</div>";
+      return;
+    }
+    el.innerHTML = `
+      <div class="result-big">
+        <span>Platten gesamt</span><span class="value">${fmt(r.total)}</span>
+      </div>
+      <div class="result-small"><span>Raster (Spalten × Reihen)</span><span class="value">${fmt(r.ax.n)} × ${fmt(r.ay.n)}</span></div>
+      <div class="result-small"><span>davon ganze Platten</span><span class="value">${fmt(r.full)}</span></div>
+      <div class="result-small"><span>davon zu schneiden</span><span class="value">${fmt(r.cut)}</span></div>
+      <div class="result-small"><span>Empfehlung inkl. 5 % Reserve</span><span class="value">${fmt(r.reserve)}</span></div>
+      <div class="result-big">
+        <span>Randsteine</span><span class="value">${fmt(r.borderCount)}</span>
+      </div>
+      <div class="result-small"><span>Randlänge gesamt</span><span class="value">${fmt(r.borderLen / 100, 2)} m</span></div>
+      <div class="result-small"><span>Terrassenfläche</span><span class="value">${fmt(r.areaTotal, 2)} m²</span></div>
+      <div class="result-small"><span>Plattenfläche (innen)</span><span class="value">${fmt(r.areaTiles, 2)} m²</span></div>
+      <div class="hint">Letzte Spalte: ${r.ax.cut ? "Zuschnitt auf " + fmt(r.ax.last, 1) + " cm" : "passt ohne Schnitt"} ·
+        letzte Reihe: ${r.ay.cut ? "Zuschnitt auf " + fmt(r.ay.last, 1) + " cm" : "passt ohne Schnitt"}.
+        Geschnittene Reststücke lassen sich teils wiederverwenden – die Reserve deckt Bruch und Fehlschnitte ab.</div>
+    `;
+  }
+
+  function svgRect(x, y, w, h, fill, stroke) {
+    return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="0.6"/>`;
+  }
+
+  function renderViz(v, r) {
+    const el = $("viz");
+    if (r.error) { el.innerHTML = ""; return; }
+
+    const pad = 42; // Platz für Bemaßung
+    const vb = `${-pad} ${-pad} ${v.W + pad * 1.6} ${v.D + pad * 1.9}`;
+    let s = "";
+
+    // Terrassen-Grundfläche
+    s += svgRect(0, 0, v.W, v.D, "#efe9df", "#c8c0b0");
+
+    // Randsteine (hinten = y 0 ist Hauswand, vorne = y = D)
+    const t = v.borderT;
+    if (t > 0) {
+      const stone = "var(--border-stone)";
+      const stoneStroke = "#6e675c";
+      const L = v.borderL > 0 ? v.borderL : v.D;
+      // links & rechts, in Einzelsteine unterteilt
+      for (let y = 0; y < v.D - 0.01; y += L) {
+        const h = Math.min(L, v.D - y);
+        s += svgRect(0, y, t, h, stone, stoneStroke);
+        s += svgRect(v.W - t, y, t, h, stone, stoneStroke);
+      }
+      // vorne dazwischen
+      for (let x = t; x < v.W - t - 0.01; x += L) {
+        const w = Math.min(L, v.W - t - x);
+        s += svgRect(x, v.D - t, w, t, stone, stoneStroke);
+      }
+    }
+
+    // Platten (Ursprung: hinten links, innerhalb der Randsteine)
+    for (let row = 0; row < r.ay.n; row++) {
+      const y = row * r.ay.pitch; // Platten beginnen an der Hauswand (y=0)
+      const h = row === r.ay.n - 1 ? r.ay.last : v.tileD;
+      for (let col = 0; col < r.ax.n; col++) {
+        const x = t + col * r.ax.pitch;
+        const w = col === r.ax.n - 1 ? r.ax.last : v.tileW;
+        const isCut = (col === r.ax.n - 1 && r.ax.cut) || (row === r.ay.n - 1 && r.ay.cut);
+        s += svgRect(x, y, w, h, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+      }
+    }
+
+    // Bemaßung
+    const dim = (x1, y1, x2, y2, label, rotate) => {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const rot = rotate ? ` transform="rotate(-90 ${mx} ${my})"` : "";
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8a8478" stroke-width="0.8"/>
+        <line x1="${x1}" y1="${y1 - 4}" x2="${x1}" y2="${y1 + 4}" stroke="#8a8478" stroke-width="0.8"${rotate ? ` transform="rotate(90 ${x1} ${y1})"` : ""}/>
+        <line x1="${x2}" y1="${y2 - 4}" x2="${x2}" y2="${y2 + 4}" stroke="#8a8478" stroke-width="0.8"${rotate ? ` transform="rotate(90 ${x2} ${y2})"` : ""}/>
+        <text x="${mx}" y="${my - 6}" text-anchor="middle" font-size="14" fill="#6f6a61"${rot}>${label}</text>`;
+    };
+    s += dim(0, -20, v.W, -20, fmt(v.W / 100, 2) + " m", false);
+    s += `<g transform="translate(${-20} 0)">` +
+         `<line x1="0" y1="0" x2="0" y2="${v.D}" stroke="#8a8478" stroke-width="0.8"/>` +
+         `<line x1="-4" y1="0" x2="4" y2="0" stroke="#8a8478" stroke-width="0.8"/>` +
+         `<line x1="-4" y1="${v.D}" x2="4" y2="${v.D}" stroke="#8a8478" stroke-width="0.8"/>` +
+         `<text x="-8" y="${v.D / 2}" text-anchor="middle" font-size="14" fill="#6f6a61" transform="rotate(-90 -8 ${v.D / 2})">${fmt(v.D / 100, 2)} m</text>` +
+         `</g>`;
+
+    // Beschriftung Hauswand / vorne
+    s += `<text x="${v.W / 2}" y="${-pad + 12}" text-anchor="middle" font-size="14" fill="#6f6a61">Hauswand (hinten)</text>`;
+    s += `<text x="${v.W / 2}" y="${v.D + 24}" text-anchor="middle" font-size="14" fill="#6f6a61">vorne</text>`;
+
+    el.innerHTML = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Verlegeplan der Terrasse">${s}</svg>`;
+  }
+
+  function update() {
+    const v = readValues();
+    if (!v) {
+      $("results").innerHTML = '<div class="error">⚠️ Bitte gültige Werte eingeben.</div>';
+      $("viz").innerHTML = "";
+      return;
+    }
+    const r = calc(v);
+    renderResults(v, r);
+    renderViz(v, r);
+  }
+
+  inputs.forEach((id) => $(id).addEventListener("input", update));
+
+  $("swapBtn").addEventListener("click", () => {
+    const a = $("tileW").value;
+    $("tileW").value = $("tileD").value;
+    $("tileD").value = a;
+    update();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
