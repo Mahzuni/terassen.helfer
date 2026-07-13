@@ -95,6 +95,12 @@
     cursor: pointer;
   }
   button.swap:hover { border-color: var(--accent); color: var(--accent); }
+  button.swap:disabled {
+    color: var(--muted);
+    cursor: default;
+    opacity: 0.7;
+  }
+  button.swap:disabled:hover { border-color: var(--line); color: var(--muted); }
   button.mini {
     padding: 0.1rem 0.5rem;
     font-size: 0.85rem;
@@ -191,6 +197,7 @@
         <input type="number" id="terraceD" value="4.55" step="0.01" min="0.1">
       </div>
     </div>
+    <button class="swap" id="noCutBtn" type="button">✂️ Maße anpassen – ohne Zuschnitt</button>
 
     <h2>Platten</h2>
     <div class="row">
@@ -509,7 +516,26 @@
     const r = calc(v);
     renderResults(v, r);
     renderViz(v, r);
+
+    const btn = $("noCutBtn");
+    btn.disabled = !!r.error || (!r.suggestW && !r.suggestD);
+    btn.textContent = btn.disabled && !r.error
+      ? "✓ Maße passen ohne Zuschnitt"
+      : "✂️ Maße anpassen – ohne Zuschnitt";
   }
+
+  // Breite und Tiefe auf das jeweils nächstgelegene schnittfreie Maß setzen
+  $("noCutBtn").addEventListener("click", () => {
+    const v = readValues();
+    if (!v) return;
+    const r = calc(v);
+    if (r.error) return;
+    const nearest = (s, current) =>
+      Math.abs(s.down.m - current) <= Math.abs(s.up.m - current) ? s.down.m : s.up.m;
+    if (r.suggestW) $("terraceW").value = nearest(r.suggestW, v.W / 100).toFixed(3);
+    if (r.suggestD) $("terraceD").value = nearest(r.suggestD, v.D / 100).toFixed(3);
+    update();
+  });
 
   inputs.forEach((id) => $(id).addEventListener("input", update));
 
