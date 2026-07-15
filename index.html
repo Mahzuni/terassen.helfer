@@ -16,6 +16,9 @@
     --tile-cut: #f0e3d2;
     --border-stone: #8d8578;
     --line: #e3ddd2;
+    --gravel: #b3aa9c;
+    --chip: #d8cfbe;
+    --soil: #a08258;
   }
   * { box-sizing: border-box; }
   body {
@@ -169,6 +172,22 @@
     display: inline-block;
     border: 1px solid var(--tile-stroke);
   }
+  .col { display: grid; gap: 1rem; align-items: start; }
+  #section svg { width: 100%; height: auto; display: block; }
+  .tips { grid-column: 1 / -1; }
+  .tips details { border-top: 1px solid var(--line); }
+  .tips summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.6rem 0;
+  }
+  .tips summary:hover { color: var(--accent); }
+  .tips ul {
+    margin: 0 0 0.85rem;
+    padding-left: 1.4rem;
+    font-size: 0.9rem;
+  }
+  .tips li { margin-bottom: 0.3rem; }
   footer {
     text-align: center;
     font-size: 0.75rem;
@@ -230,6 +249,28 @@
       </div>
     </div>
 
+    <h2>Unterbau &amp; Gefälle</h2>
+    <div class="row">
+      <div class="field">
+        <label for="gravelT">Schotter (cm)</label>
+        <input type="number" id="gravelT" value="15" step="1" min="0">
+      </div>
+      <div class="field">
+        <label for="chipT">Splitt (cm)</label>
+        <input type="number" id="chipT" value="4" step="0.5" min="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="tileT">Plattendicke (cm)</label>
+        <input type="number" id="tileT" value="2" step="0.5" min="0">
+      </div>
+      <div class="field">
+        <label for="slope">Gefälle (%)</label>
+        <input type="number" id="slope" value="2" step="0.5" min="0">
+      </div>
+    </div>
+
     <h2>Preise (optional)</h2>
     <div class="row">
       <div class="field">
@@ -247,17 +288,77 @@
         <input type="number" id="priceBorder" step="0.01" min="0" placeholder="z. B. 4.99">
       </div>
     </div>
+    <div class="row">
+      <div class="field">
+        <label for="priceGravel">€ pro t Schotter</label>
+        <input type="number" id="priceGravel" step="0.01" min="0" placeholder="z. B. 18.00">
+      </div>
+      <div class="field">
+        <label for="priceChip">€ pro t Splitt</label>
+        <input type="number" id="priceChip" step="0.01" min="0" placeholder="z. B. 45.00">
+      </div>
+    </div>
 
     <div class="results" id="results"></div>
   </div>
 
-  <div class="card">
-    <div id="viz"></div>
-    <div class="legend">
-      <span><i style="background:var(--tile)"></i> ganze Platte</span>
-      <span><i style="background:var(--tile-cut)"></i> geschnittene Platte</span>
-      <span><i style="background:var(--border-stone); border-color:#6e675c"></i> Randstein</span>
+  <div class="col">
+    <div class="card">
+      <div id="viz"></div>
+      <div class="legend">
+        <span><i style="background:var(--tile)"></i> ganze Platte</span>
+        <span><i style="background:var(--tile-cut)"></i> geschnittene Platte</span>
+        <span><i style="background:var(--border-stone); border-color:#6e675c"></i> Randstein</span>
+      </div>
     </div>
+    <div class="card">
+      <h2>Schichtaufbau (Querschnitt)</h2>
+      <div id="section"></div>
+      <div class="hint">Höhen überhöht dargestellt, damit die Schichten erkennbar sind.
+        Alle Schichten folgen dem Gefälle – so bleibt der Aufbau überall gleich dick
+        und Regenwasser läuft vom Haus weg.</div>
+    </div>
+  </div>
+
+  <div class="card tips">
+    <h2>Tipps &amp; Tricks für den Aufbau</h2>
+    <details>
+      <summary>📐 Messen &amp; Abstecken</summary>
+      <ul>
+        <li><strong>Fertighöhe zuerst festlegen:</strong> An der Hauswand die Oberkante der Platten markieren – mindestens 15 cm unter der Türschwelle (bzw. 5 cm, wenn vor der Tür eine Entwässerungsrinne liegt).</li>
+        <li><strong>Rechter Winkel mit der 3-4-5-Regel:</strong> 3 m an der Hauswand abmessen, 4 m in die Fläche – die Diagonale muss genau 5 m betragen. Zur Kontrolle beide Diagonalen der Terrasse messen: sind sie gleich lang, ist die Fläche rechtwinklig.</li>
+        <li><strong>Schnurgerüst setzen:</strong> Holzpflöcke ca. 50 cm außerhalb der späteren Fläche einschlagen und Maurerschnur auf Fertighöhe inklusive Gefälle spannen. So bleibt die Höhenreferenz beim Ausheben und Schütten erhalten.</li>
+        <li><strong>Höhen übertragen:</strong> Mit Schlauchwaage oder Linienlaser arbeiten. Das Gefälle unterwegs prüfen: Wasserwaage mit untergelegtem Keil – 2 cm auf 1 m Länge entsprechen 2 %.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>⛏️ Aushub &amp; Schotterschicht</summary>
+      <ul>
+        <li><strong>Aushubtiefe</strong> = Plattendicke + Splitt + Schotter; an der Vorderkante kommt das Gefälle dazu (die genauen Werte stehen links im Rechner).</li>
+        <li><strong>Erdplanum schon mit Gefälle anlegen</strong> und abrütteln – dann bleiben alle Schichten darüber gleich dick.</li>
+        <li><strong>Schotter 0/32 (Frostschutz) lagenweise einbauen:</strong> maximal 10–15 cm pro Lage, jede Lage mit der Rüttelplatte verdichten (Leihgerät im Baumarkt). Beim Verdichten sackt das Material um 10–20 % – deshalb lose etwas mehr bestellen.</li>
+        <li><strong>Randsteine vor dem Splitt setzen:</strong> in erdfeuchten Beton mit Rückenstütze. Sie halten später Splittbett und Platten seitlich in Position.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>🥄 Splittbett abziehen</summary>
+      <ul>
+        <li><strong>Edelsplitt 2/5 verwenden,</strong> keinen Sand – Splitt bleibt wasserdurchlässig, lagestabil und zieht keine Ameisen an.</li>
+        <li><strong>Abziehlehren ausrichten:</strong> Zwei Metallrohre im Abstand der Alu-Latte auf den Schotter legen und mit der Schnur exakt ins Gefälle bringen.</li>
+        <li><strong>Abziehen:</strong> Splitt zwischen den Rohren verteilen und mit einer Alu-Latte glatt abziehen. Danach die Rohre versetzen, die Rillen mit Splitt füllen und glattstreichen.</li>
+        <li><strong>Die abgezogene Fläche nicht mehr betreten</strong> – rückwärts aus der Fläche herausarbeiten oder von bereits verlegten Platten aus weiterarbeiten.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>🧱 Platten verlegen</summary>
+      <ul>
+        <li><strong>An der Hauswand beginnen</strong> und nach vorne arbeiten; die erste Reihe an einer gespannten Schnur ausrichten – sie gibt die Flucht für alles Weitere vor.</li>
+        <li><strong>Feinsteinzeug nur leicht antippen</strong> (weißer Gummihammer), niemals einrütteln. Für Verlegung im Splittbett mindestens 2 cm starke Terrassenplatten verwenden.</li>
+        <li><strong>Fugenkreuze stellen:</strong> im Feld normale Kreuze, am Rand halbierte bzw. hochkant gestellte. Die Fugen bleiben offen – so kann Wasser ablaufen.</li>
+        <li><strong>Nach jeder Reihe kontrollieren:</strong> Flucht mit der Schnur, Gefälle mit Wasserwaage und Keil. Kleine Fehler summieren sich sonst schnell.</li>
+        <li><strong>Schneiden:</strong> Nassschneidetisch mit Diamantscheibe (leihen) oder Winkelschleifer mit Feinsteinzeug-Diamantscheibe. Schnittkanten nach außen zum Randstein legen, dort fallen sie kaum auf.</li>
+      </ul>
+    </details>
   </div>
 </main>
 
@@ -269,7 +370,8 @@
 
   const $ = (id) => document.getElementById(id);
   const inputs = ["terraceW", "terraceD", "tileW", "tileD", "joint", "borderT", "borderL",
-                  "pricePiece", "priceM2", "priceBorder"];
+                  "gravelT", "chipT", "tileT", "slope",
+                  "pricePiece", "priceM2", "priceBorder", "priceGravel", "priceChip"];
 
   const fmt = (n, digits = 0) =>
     n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -295,6 +397,10 @@
       joint: parseFloat($("joint").value) / 10, // mm → cm
       borderT: parseFloat($("borderT").value),
       borderL: parseFloat($("borderL").value),
+      gravelT: parseFloat($("gravelT").value),
+      chipT: parseFloat($("chipT").value),
+      tileT: parseFloat($("tileT").value),
+      slope: parseFloat($("slope").value),
     };
     if (Object.values(v).some((x) => !isFinite(x) || x < 0)) return null;
     if (v.W <= 0 || v.D <= 0 || v.tileW <= 0 || v.tileD <= 0) return null;
@@ -306,12 +412,17 @@
     v.pricePiece = opt("pricePiece");
     v.priceM2 = opt("priceM2");
     v.priceBorder = opt("priceBorder");
+    v.priceGravel = opt("priceGravel");
+    v.priceChip = opt("priceChip");
     return v;
   }
 
   function calc(v) {
-    const innerW = v.W - 2 * v.borderT; // links + rechts Randstein
-    const innerD = v.D - v.borderT;     // vorne Randstein, hinten Hauswand
+    // Randfugen: zwischen Platten und Randsteinen (nur wenn Randsteine da sind)
+    // sowie immer eine Fuge an der Hauswand
+    const edge = v.borderT > 0 ? v.joint : 0;
+    const innerW = v.W - 2 * v.borderT - 2 * edge; // links + rechts Randstein + Fuge
+    const innerD = v.D - v.borderT - edge - v.joint; // vorne Randstein + Fuge, hinten Hauswand-Fuge
     if (innerW <= 0 || innerD <= 0) return { error: "Randsteine sind dicker als die Terrasse." };
 
     const ax = axis(innerW, v.tileW, v.joint); // Spalten
@@ -321,6 +432,12 @@
     const fullCols = ax.n - (ax.cut ? 1 : 0);
     const fullRows = ay.n - (ay.cut ? 1 : 0);
     const full = fullCols * fullRows;
+
+    // Fugenkreuze: an jedem Punkt, an dem 4 Platten zusammenstoßen; am Rand
+    // (Randstein/Hauswand) enden die Fugen als T – dort halbierte Kreuze oder
+    // hochkant gestellte Kreuze verwenden.
+    const crossInner = (ax.n - 1) * (ay.n - 1);
+    const crossEdge = 2 * (ax.n - 1) + 2 * (ay.n - 1);
 
     // Randsteine: links + rechts über die volle Tiefe, vorne dazwischen
     let borderLen = 0;
@@ -354,24 +471,41 @@
         up: { n: nDown + 1, m: size(nDown + 1) },
       };
     };
-    const suggestW = ax.cut ? suggest(innerW, v.tileW, v.joint, 2 * v.borderT) : null;
-    const suggestD = ay.cut ? suggest(innerD, v.tileD, v.joint, v.borderT) : null;
+    const suggestW = ax.cut ? suggest(innerW, v.tileW, v.joint, v.W - innerW) : null;
+    const suggestD = ay.cut ? suggest(innerD, v.tileD, v.joint, v.D - innerD) : null;
+
+    // Gefälle über die Tiefe (vom Haus weg) und Unterbau-Mengen über die
+    // gesamte Terrassenfläche (inkl. Randsteinstreifen)
+    const areaTotal = (v.W * v.D) / 10000; // m²
+    const slopeDrop = (v.D * v.slope) / 100; // cm Höhenunterschied hinten → vorne
+    const buildT = v.gravelT + v.chipT + v.tileT; // Aufbauhöhe ab Erdplanum, cm
+    const gravelM3 = areaTotal * (v.gravelT / 100); // verdichtet eingebaut
+    const chipM3 = areaTotal * (v.chipT / 100);
+    const gravelTons = gravelM3 * 1.8; // Schotter 0/32 verdichtet ~1,8 t/m³
+    const chipTons = chipM3 * 1.7; // Edelsplitt 2/5 ~1,7 t/m³
+    const digM3 = areaTotal * ((buildT + slopeDrop / 2) / 100);
 
     // Preise: Stückpreis hat Vorrang, sonst m²-Preis × Plattenfläche
     const tileArea = (v.tileW * v.tileD) / 10000; // m²
     const pricePerTile = v.pricePiece > 0 ? v.pricePiece : v.priceM2 * tileArea;
     const costBorder = v.priceBorder * borderCount;
+    const costGravel = v.priceGravel * gravelTons;
+    const costChip = v.priceChip * chipTons;
 
     return {
-      innerW, innerD, ax, ay,
+      innerW, innerD, edge, ax, ay,
       total, full, cut: total - full,
       reserve: Math.ceil(total * 1.05),
       optTotal, optSaved: total - optTotal,
+      crossInner, crossEdge,
       suggestW, suggestD,
-      areaTotal: (v.W * v.D) / 10000,
+      areaTotal,
       areaTiles: (innerW * innerD) / 10000,
       borderLen, borderCount,
-      pricePerTile, costBorder,
+      slopeDrop, buildT,
+      gravelM3, gravelTons, gravelLoose: gravelM3 * 1.2,
+      chipM3, chipTons, digM3,
+      pricePerTile, costBorder, costGravel, costChip,
       costTiles: pricePerTile * total,
       costTilesOpt: pricePerTile * optTotal,
     };
@@ -391,6 +525,10 @@
       <div class="result-small"><span>davon ganze Platten</span><span class="value">${fmt(r.full)}</span></div>
       <div class="result-small"><span>davon zu schneiden</span><span class="value">${fmt(r.cut)}</span></div>
       <div class="result-small"><span>Empfehlung inkl. 5 % Reserve</span><span class="value">${fmt(r.reserve)}</span></div>
+      <div class="result-big">
+        <span>Fugenkreuze</span><span class="value">${fmt(r.crossInner)}</span>
+      </div>
+      <div class="result-small"><span>zusätzlich am Rand (als T gestellt)</span><span class="value">${fmt(r.crossEdge)}</span></div>
       <div class="result-big">
         <span>Optimiert (Reste verwenden)</span><span class="value">${fmt(r.optTotal)}</span>
       </div>
@@ -417,9 +555,26 @@
       <div class="result-small"><span>Randlänge gesamt</span><span class="value">${fmt(r.borderLen / 100, 2)} m</span></div>
       <div class="result-small"><span>Terrassenfläche</span><span class="value">${fmt(r.areaTotal, 2)} m²</span></div>
       <div class="result-small"><span>Plattenfläche (innen)</span><span class="value">${fmt(r.areaTiles, 2)} m²</span></div>
-      ${r.pricePerTile > 0 || r.costBorder > 0 ? `
       <div class="result-big">
-        <span>Kosten gesamt</span><span class="value">${fmt(r.costTiles + r.costBorder, 2)} €</span>
+        <span>Gefälle (${fmt(v.slope, 1)} %)</span><span class="value">${fmt(r.slopeDrop, 1)} cm</span>
+      </div>
+      <div class="result-small"><span>pro Meter, vom Haus weg</span><span class="value">${fmt(v.slope, 1)} cm</span></div>
+      <div class="result-small"><span>Aushubtiefe hinten → vorne</span><span class="value">${fmt(r.buildT, 1)} → ${fmt(r.buildT + r.slopeDrop, 1)} cm</span></div>
+      <div class="result-small"><span>Aushub ca.</span><span class="value">${fmt(r.digM3, 1)} m³</span></div>
+      ${v.gravelT > 0 ? `
+      <div class="result-big">
+        <span>Schotter 0/32</span><span class="value">${fmt(r.gravelTons, 1)} t</span>
+      </div>
+      <div class="result-small"><span>verdichtet (${fmt(v.gravelT, 1)} cm)</span><span class="value">${fmt(r.gravelM3, 2)} m³</span></div>
+      <div class="result-small"><span>lose bestellen (ca. +20 %)</span><span class="value">${fmt(r.gravelLoose, 2)} m³</span></div>` : ""}
+      ${v.chipT > 0 ? `
+      <div class="result-big">
+        <span>Edelsplitt 2/5</span><span class="value">${fmt(r.chipTons, 1)} t</span>
+      </div>
+      <div class="result-small"><span>Schicht (${fmt(v.chipT, 1)} cm)</span><span class="value">${fmt(r.chipM3, 2)} m³</span></div>` : ""}
+      ${r.pricePerTile > 0 || r.costBorder > 0 || r.costGravel > 0 || r.costChip > 0 ? `
+      <div class="result-big">
+        <span>Kosten gesamt</span><span class="value">${fmt(r.costTiles + r.costBorder + r.costGravel + r.costChip, 2)} €</span>
       </div>
       ${r.pricePerTile > 0 ? `
       <div class="result-small"><span>Preis pro Platte</span><span class="value">${fmt(r.pricePerTile, 2)} €</span></div>
@@ -427,10 +582,15 @@
       <div class="result-small"><span>Platten optimiert (${fmt(r.optTotal)} Stk.)</span><span class="value">${fmt(r.costTilesOpt, 2)} €</span></div>` : ""}
       ${r.costBorder > 0 ? `
       <div class="result-small"><span>Randsteine (${fmt(r.borderCount)} Stk.)</span><span class="value">${fmt(r.costBorder, 2)} €</span></div>` : ""}
+      ${r.costGravel > 0 ? `
+      <div class="result-small"><span>Schotter (${fmt(r.gravelTons, 1)} t)</span><span class="value">${fmt(r.costGravel, 2)} €</span></div>` : ""}
+      ${r.costChip > 0 ? `
+      <div class="result-small"><span>Splitt (${fmt(r.chipTons, 1)} t)</span><span class="value">${fmt(r.costChip, 2)} €</span></div>` : ""}
       ${r.pricePerTile > 0 && r.optSaved > 0 ? `
       <div class="result-small"><span>Ersparnis optimiert</span><span class="value">${fmt(r.costTiles - r.costTilesOpt, 2)} €</span></div>` : ""}` : ""}
       <div class="hint">Letzte Spalte: ${r.ax.cut ? "Zuschnitt auf " + fmt(r.ax.last, 1) + " cm" : "passt ohne Schnitt"} ·
         letzte Reihe: ${r.ay.cut ? "Zuschnitt auf " + fmt(r.ay.last, 1) + " cm" : "passt ohne Schnitt"}.
+        Fugen sind auch zu Randsteinen und Hauswand berücksichtigt.
         Die optimierte Zahl geht davon aus, dass aus einer Platte mehrere Zuschnitte
         geschnitten werden (ohne Sägeverlust) – Bruch und Fehlschnitte sind darin nicht enthalten.</div>
     `;
@@ -445,7 +605,7 @@
     if (r.error) { el.innerHTML = ""; return; }
 
     const pad = 42; // Platz für Bemaßung
-    const vb = `${-pad} ${-pad} ${v.W + pad * 1.6} ${v.D + pad * 1.9}`;
+    const vb = `${-pad} ${-pad - 14} ${v.W + pad * 1.6} ${v.D + pad * 1.9 + 14}`;
     let s = "";
 
     // Terrassen-Grundfläche
@@ -470,12 +630,14 @@
       }
     }
 
-    // Platten (Ursprung: hinten links, innerhalb der Randsteine)
+    // Platten (Ursprung: hinten links, innerhalb von Randsteinen und Randfugen)
+    const x0 = t + r.edge;
+    const y0 = v.joint; // Fuge zur Hauswand
     for (let row = 0; row < r.ay.n; row++) {
-      const y = row * r.ay.pitch; // Platten beginnen an der Hauswand (y=0)
+      const y = y0 + row * r.ay.pitch;
       const h = row === r.ay.n - 1 ? r.ay.last : v.tileD;
       for (let col = 0; col < r.ax.n; col++) {
-        const x = t + col * r.ax.pitch;
+        const x = x0 + col * r.ax.pitch;
         const w = col === r.ax.n - 1 ? r.ax.last : v.tileW;
         const isCut = (col === r.ax.n - 1 && r.ax.cut) || (row === r.ay.n - 1 && r.ay.cut);
         s += svgRect(x, y, w, h, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
@@ -500,10 +662,94 @@
          `</g>`;
 
     // Beschriftung Hauswand / vorne
-    s += `<text x="${v.W / 2}" y="${-pad + 12}" text-anchor="middle" font-size="14" fill="#6f6a61">Hauswand (hinten)</text>`;
+    s += `<text x="${v.W / 2}" y="${-pad + 2}" text-anchor="middle" font-size="14" fill="#6f6a61">Hauswand (hinten)</text>`;
     s += `<text x="${v.W / 2}" y="${v.D + 24}" text-anchor="middle" font-size="14" fill="#6f6a61">vorne</text>`;
 
     el.innerHTML = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Verlegeplan der Terrasse">${s}</svg>`;
+  }
+
+  // Querschnitt durch die Tiefe: Hauswand links, Vorderkante mit Randstein
+  // rechts. Höhen werden überhöht gezeichnet, sonst wären die Schichten bei
+  // maßstäblicher Tiefe nur wenige Pixel hoch.
+  function renderSection(v, r) {
+    const el = $("section");
+    if (r.error) { el.innerHTML = ""; return; }
+
+    const k = 4; // Überhöhungsfaktor für alle Höhen
+    const drop = r.slopeDrop;
+    // y-Position (SVG, nach unten positiv) an Tiefe x, offCm unter der Oberfläche
+    const yAt = (x, offCm) => (x / v.D) * drop * k + offCm * k;
+    const pt = (x, yv) => `${x.toFixed(1)},${yv.toFixed(1)}`;
+    // Schichtband zwischen zwei Tiefen-Offsets, folgt dem Gefälle
+    const band = (x1, x2, o1, o2, fill, stroke) =>
+      `<polygon points="${pt(x1, yAt(x1, o1))} ${pt(x2, yAt(x2, o1))} ${pt(x2, yAt(x2, o2))} ${pt(x1, yAt(x1, o2))}" fill="${fill}" stroke="${stroke}" stroke-width="0.6"/>`;
+
+    const oTile = v.tileT;
+    const oChip = oTile + v.chipT;
+    const oGravel = oChip + v.gravelT;
+    const soilH = 8; // gezeichnete Erdreich-Höhe in cm
+    const oSoil = oGravel + soilH;
+    const stoneX = v.borderT > 0 ? v.D - v.borderT : v.D;
+
+    let s = "";
+    s += band(0, v.D, oGravel, oSoil, "var(--soil)", "#7d6644");
+    if (v.gravelT > 0) s += band(0, v.D, oChip, oGravel, "var(--gravel)", "#8f877a");
+    if (v.chipT > 0) s += band(0, stoneX, oTile, oChip, "var(--chip)", "#a99f8c");
+
+    // Platten mit Fugen: der Schnitt durch die Tiefe zeigt die Reihen
+    if (v.tileT > 0) {
+      for (let row = 0; row < r.ay.n; row++) {
+        const x = v.joint + row * r.ay.pitch;
+        const w = row === r.ay.n - 1 ? r.ay.last : v.tileD;
+        const isCut = row === r.ay.n - 1 && r.ay.cut;
+        s += band(x, x + w, 0, oTile, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+      }
+    }
+
+    // Randstein vorne, ragt bis in die Schotterschicht (Betonbett)
+    if (v.borderT > 0) {
+      s += band(stoneX, v.D, 0, Math.min(oChip + 8, oSoil - 2), "var(--border-stone)", "#6e675c");
+    }
+
+    // Hauswand links
+    const wallW = 14;
+    const wallTop = -10 * k;
+    const bottom = yAt(v.D, oSoil);
+    s += `<rect x="${-wallW}" y="${wallTop}" width="${wallW}" height="${(bottom - wallTop).toFixed(1)}" fill="#d8d2c6" stroke="#b0a898" stroke-width="0.6"/>`;
+    s += `<text x="${-wallW / 2}" y="${(bottom / 2).toFixed(1)}" text-anchor="middle" font-size="13" fill="#6f6a61" transform="rotate(-90 ${-wallW / 2} ${(bottom / 2).toFixed(1)})">Hauswand</text>`;
+
+    // Gefälle: Waagerechte ab Hinterkante als Referenz + Höhenversatz vorne
+    s += `<line x1="0" y1="0" x2="${v.D}" y2="0" stroke="#8a8478" stroke-width="0.8" stroke-dasharray="6 5"/>`;
+    s += `<text x="${(v.D * 0.5).toFixed(1)}" y="-10" text-anchor="middle" font-size="13" fill="#6f6a61">Gefälle ${fmt(v.slope, 1)} % · ${fmt(drop, 1)} cm auf ${fmt(v.D / 100, 2)} m</text>`;
+    if (drop > 0) {
+      s += `<line x1="${v.D + 8}" y1="0" x2="${v.D + 8}" y2="${(drop * k).toFixed(1)}" stroke="#8a8478" stroke-width="0.8"/>
+        <line x1="${v.D + 4}" y1="0" x2="${v.D + 12}" y2="0" stroke="#8a8478" stroke-width="0.8"/>
+        <line x1="${v.D + 4}" y1="${(drop * k).toFixed(1)}" x2="${v.D + 12}" y2="${(drop * k).toFixed(1)}" stroke="#8a8478" stroke-width="0.8"/>`;
+    }
+
+    // Schichten rechts beschriften, mit Mindestabstand zwischen den Zeilen
+    const cmTxt = (t) => fmt(t, t % 1 ? 1 : 0) + " cm";
+    const entries = [];
+    if (v.tileT > 0) entries.push({ o: oTile / 2, label: "Feinsteinzeug " + cmTxt(v.tileT) });
+    if (v.chipT > 0) entries.push({ o: (oTile + oChip) / 2, label: "Edelsplitt 2/5 · " + cmTxt(v.chipT) });
+    if (v.borderT > 0) entries.push({ o: (oChip + 8) / 2, label: "Randstein (in Beton)" });
+    if (v.gravelT > 0) entries.push({ o: (oChip + oGravel) / 2, label: "Schotter 0/32 · " + cmTxt(v.gravelT) });
+    entries.push({ o: (oGravel + oSoil) / 2, label: "Erdreich (Planum verdichtet)" });
+    entries.sort((a, b) => a.o - b.o);
+    let prevY = drop > 0 ? drop * k * 0.35 : -Infinity; // nicht mit der Gefälle-Bemaßung kollidieren
+    for (const e of entries) {
+      const yFront = yAt(v.D, e.o);
+      const yLabel = Math.max(yFront, prevY + 17);
+      prevY = yLabel;
+      s += `<line x1="${v.D + 16}" y1="${yFront.toFixed(1)}" x2="${v.D + 34}" y2="${yLabel.toFixed(1)}" stroke="#b0a898" stroke-width="0.7"/>`;
+      s += `<text x="${v.D + 38}" y="${(yLabel + 4).toFixed(1)}" font-size="13" fill="#6f6a61">${e.label}</text>`;
+    }
+
+    const vbX = -wallW - 6;
+    const vbY = wallTop - 16;
+    const vbW = wallW + 6 + v.D + 225;
+    const vbH = bottom - vbY + 12;
+    el.innerHTML = `<svg viewBox="${vbX} ${vbY} ${vbW.toFixed(1)} ${vbH.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schichtaufbau der Terrasse im Querschnitt">${s}</svg>`;
   }
 
   function update() {
@@ -511,11 +757,13 @@
     if (!v) {
       $("results").innerHTML = '<div class="error">⚠️ Bitte gültige Werte eingeben.</div>';
       $("viz").innerHTML = "";
+      $("section").innerHTML = "";
       return;
     }
     const r = calc(v);
     renderResults(v, r);
     renderViz(v, r);
+    renderSection(v, r);
 
     const btn = $("noCutBtn");
     btn.disabled = !!r.error || (!r.suggestW && !r.suggestD);
