@@ -72,7 +72,7 @@
     color: var(--muted);
     margin-bottom: 0.15rem;
   }
-  .field input {
+  .field input, .field select {
     width: 100%;
     padding: 0.45rem 0.5rem;
     font-size: 1rem;
@@ -81,10 +81,14 @@
     background: #fdfcfa;
     color: var(--ink);
   }
-  .field input:focus {
+  .field input:focus, .field select:focus {
     outline: 2px solid var(--accent);
     outline-offset: -1px;
     border-color: var(--accent);
+  }
+  .field input:disabled {
+    color: var(--muted);
+    background: var(--bg);
   }
   button.swap {
     width: 100%;
@@ -222,7 +226,7 @@
     <div class="row">
       <div class="field">
         <label for="tileW">Breite (cm)</label>
-        <input type="number" id="tileW" value="60" step="0.1" min="1">
+        <input type="number" id="tileW" value="120" step="0.1" min="1">
       </div>
       <div class="field">
         <label for="tileD">Tiefe (cm)</label>
@@ -232,8 +236,21 @@
     <button class="swap" id="swapBtn" type="button">⇄ Platten um 90° drehen</button>
     <div class="row">
       <div class="field">
+        <label for="pattern">Verlegemuster</label>
+        <select id="pattern">
+          <option value="offset" selected>Versetzt · 1/3-Verband</option>
+          <option value="grid">Kreuzverband (Raster)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
         <label for="joint">Fugenbreite (mm)</label>
         <input type="number" id="joint" value="3" step="0.5" min="0">
+      </div>
+      <div class="field">
+        <label for="minPiece">Mindeststück (cm)</label>
+        <input type="number" id="minPiece" value="20" step="1" min="0">
       </div>
     </div>
 
@@ -353,6 +370,7 @@
       <summary>🧱 Platten verlegen</summary>
       <ul>
         <li><strong>An der Hauswand beginnen</strong> und nach vorne arbeiten; die erste Reihe an einer gespannten Schnur ausrichten – sie gibt die Flucht für alles Weitere vor.</li>
+        <li><strong>1/3-Verband:</strong> Jede Reihe um ein Drittel der Plattenlänge versetzen (Zyklus 0 · 1/3 · 2/3). Das wirkt ruhiger als Kreuzfugen, kaschiert kleine Maßabweichungen und die Anschnitte einer Platte (1/3 + 2/3) lassen sich als Reihenanfänge komplett verwerten.</li>
         <li><strong>Feinsteinzeug nur leicht antippen</strong> (weißer Gummihammer), niemals einrütteln. Für Verlegung im Splittbett mindestens 2 cm starke Terrassenplatten verwenden.</li>
         <li><strong>Fugenkreuze stellen:</strong> im Feld normale Kreuze, am Rand halbierte bzw. hochkant gestellte. Die Fugen bleiben offen – so kann Wasser ablaufen.</li>
         <li><strong>Nach jeder Reihe kontrollieren:</strong> Flucht mit der Schnur, Gefälle mit Wasserwaage und Keil. Kleine Fehler summieren sich sonst schnell.</li>
@@ -369,8 +387,8 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const inputs = ["terraceW", "terraceD", "tileW", "tileD", "joint", "borderT", "borderL",
-                  "gravelT", "chipT", "tileT", "slope",
+  const inputs = ["terraceW", "terraceD", "tileW", "tileD", "pattern", "joint", "minPiece",
+                  "borderT", "borderL", "gravelT", "chipT", "tileT", "slope",
                   "pricePiece", "priceM2", "priceBorder", "priceGravel", "priceChip"];
 
   const fmt = (n, digits = 0) =>
@@ -388,6 +406,66 @@
     return { n, last, cut, pitch };
   }
 
+  // Erst-Fit-Verfahren (größtes Stück zuerst): Wie viele Platten braucht man,
+  // um alle Schnittstücke daraus zu schneiden? Sägeverlust bleibt außen vor.
+  function packPieces(lengths, cap) {
+    const rest = [];
+    for (const len of [...lengths].sort((a, b) => b - a)) {
+      const i = rest.findIndex((r) => r >= len - 0.01);
+      if (i >= 0) rest[i] -= len;
+      else rest.push(cap - len);
+    }
+    return rest.length;
+  }
+
+  // 1/3-Verband: jede Reihe ist um ein Drittel der Plattenbreite versetzt
+  // (Zyklus 0 · 1/3 · 2/3). Zu schmale Reststücke werden vermieden:
+  // – am Reihenende, indem die letzte ganze Platte und der Rest auf zwei
+  //   gleich breite Stücke verteilt werden,
+  // – in der Tiefe, indem statt einer zu schmalen letzten Reihe die letzten
+  //   beiden Reihen auf gleiche Tiefe geschnitten werden.
+  function offsetRows(v, innerW, ay) {
+    const eps = 0.05;
+    const pitch = v.tileW + v.joint;
+    const minW = Math.min(v.minPiece, v.tileW / 2);
+    const minD = Math.min(v.minPiece, v.tileD / 2);
+
+    const depths = [];
+    for (let r = 0; r < ay.n; r++) {
+      depths.push({ d: r === ay.n - 1 ? ay.last : v.tileD, cut: r === ay.n - 1 && ay.cut });
+    }
+    if (ay.cut && ay.n >= 2 && ay.last > eps && ay.last < minD) {
+      const half = (v.tileD + ay.last) / 2;
+      depths[ay.n - 2] = { d: half, cut: true };
+      depths[ay.n - 1] = { d: half, cut: true };
+    }
+
+    const rows = [];
+    for (let r = 0; r < ay.n; r++) {
+      const off = ((r % 3) * v.tileW) / 3;
+      const widths = [];
+      let x = 0;
+      if (off > eps) { widths.push(off); x = off + v.joint; }
+      let nFull = Math.max(0, Math.floor((innerW - x + v.joint + eps) / pitch));
+      const rem = innerW - x - nFull * pitch;
+      if (rem > eps && rem < minW && nFull >= 1) {
+        nFull -= 1;
+        for (let i = 0; i < nFull; i++) widths.push(v.tileW);
+        const half = (v.tileW + rem) / 2;
+        widths.push(half, half);
+      } else if (rem > eps && rem < minW && widths.length === 1) {
+        const half = (widths[0] + rem) / 2;
+        widths[0] = half;
+        widths.push(half);
+      } else {
+        for (let i = 0; i < nFull; i++) widths.push(v.tileW);
+        if (rem > eps) widths.push(rem);
+      }
+      rows.push({ depth: depths[r].d, depthCut: depths[r].cut, widths });
+    }
+    return rows;
+  }
+
   function readValues() {
     const v = {
       W: parseFloat($("terraceW").value) * 100, // m → cm
@@ -395,6 +473,7 @@
       tileW: parseFloat($("tileW").value),
       tileD: parseFloat($("tileD").value),
       joint: parseFloat($("joint").value) / 10, // mm → cm
+      minPiece: parseFloat($("minPiece").value),
       borderT: parseFloat($("borderT").value),
       borderL: parseFloat($("borderL").value),
       gravelT: parseFloat($("gravelT").value),
@@ -404,6 +483,7 @@
     };
     if (Object.values(v).some((x) => !isFinite(x) || x < 0)) return null;
     if (v.W <= 0 || v.D <= 0 || v.tileW <= 0 || v.tileD <= 0) return null;
+    v.pattern = $("pattern").value;
     // Preisfelder sind optional – leer bedeutet: keine Preisberechnung
     const opt = (id) => {
       const x = parseFloat($(id).value);
@@ -427,6 +507,69 @@
 
     const ax = axis(innerW, v.tileW, v.joint); // Spalten
     const ay = axis(innerD, v.tileD, v.joint); // Reihen
+
+    // Versetzte Verlegung: Reihenlayout aufbauen und die Kaufmenge über
+    // Restverwertung minimieren
+    let off = null;
+    if (v.pattern !== "grid") {
+      const eps = 0.05;
+      const rows = offsetRows(v, innerW, ay);
+      let whole = 0, pieces = 0, cutCount = 0, laidCm2 = 0;
+      const cutWidths = [], allCutW = [];
+      const depthGroups = new Map(); // Reihentiefe → benötigte Stückbreiten
+      for (const row of rows) {
+        for (const w of row.widths) {
+          pieces++;
+          laidCm2 += w * row.depth;
+          const wCut = w < v.tileW - eps;
+          if (wCut) allCutW.push(w);
+          if (row.depthCut) {
+            cutCount++;
+            const key = row.depth.toFixed(1);
+            if (!depthGroups.has(key)) depthGroups.set(key, []);
+            depthGroups.get(key).push(w);
+          } else if (wCut) {
+            cutCount++;
+            cutWidths.push(w);
+          } else {
+            whole++;
+          }
+        }
+      }
+      // Kaufmenge: ganze Platten + Platten, aus denen die Zuschnitte
+      // geschnitten werden. Reihen mit reduzierter Tiefe: erst Streifen aus
+      // der Platte schneiden (mehrere pro Platte, wenn die Tiefe es hergibt),
+      // dann die Breiten daraus.
+      let buy = whole + packPieces(cutWidths, v.tileW);
+      for (const [key, ws] of depthGroups) {
+        const strips = Math.max(1, Math.floor((v.tileD + eps) / parseFloat(key)));
+        buy += Math.ceil(packPieces(ws, v.tileW) / strips);
+      }
+      // T-Stücke: senkrechte Fugen enden oben und unten an einer Querfuge
+      // (innen) oder an Hauswand/Randstein (Rand); Querfugen enden seitlich
+      // am Rand.
+      let tInner = 0, tEdge = 0;
+      rows.forEach((row, i) => {
+        const jts = Math.max(0, row.widths.length - 1);
+        tInner += jts * ((i > 0 ? 1 : 0) + (i < rows.length - 1 ? 1 : 0));
+        tEdge += jts * ((i === 0 ? 1 : 0) + (i === rows.length - 1 ? 1 : 0));
+      });
+      tEdge += 2 * (rows.length - 1);
+      // Schnittbreiten gruppiert – als Schnittliste fürs Zuschneiden
+      const groupsW = new Map();
+      for (const w of allCutW) {
+        const key = w.toFixed(1);
+        groupsW.set(key, (groupsW.get(key) || 0) + 1);
+      }
+      const cutList = [...groupsW.entries()]
+        .map(([w, n]) => ({ w: parseFloat(w), n }))
+        .sort((a, b) => b.w - a.w);
+      off = {
+        rows, whole, pieces, cutCount, buy, cutList, tInner, tEdge,
+        simple: whole + cutCount,
+        wastePct: buy > 0 ? Math.max(0, 100 * (1 - laidCm2 / (buy * v.tileW * v.tileD))) : 0,
+      };
+    }
 
     const total = ax.n * ay.n;
     const fullCols = ax.n - (ax.cut ? 1 : 0);
@@ -493,10 +636,14 @@
     const costChip = v.priceChip * chipTons;
 
     return {
+      pattern: v.pattern, off,
       innerW, innerD, edge, ax, ay,
-      total, full, cut: total - full,
-      reserve: Math.ceil(total * 1.05),
-      optTotal, optSaved: total - optTotal,
+      total: off ? off.simple : total,
+      full: off ? off.whole : full,
+      cut: off ? off.cutCount : total - full,
+      reserve: Math.ceil((off ? off.buy : total) * 1.05),
+      optTotal: off ? off.buy : optTotal,
+      optSaved: off ? off.simple - off.buy : total - optTotal,
       crossInner, crossEdge,
       suggestW, suggestD,
       areaTotal,
@@ -506,8 +653,8 @@
       gravelM3, gravelTons, gravelLoose: gravelM3 * 1.2,
       chipM3, chipTons, digM3,
       pricePerTile, costBorder, costGravel, costChip,
-      costTiles: pricePerTile * total,
-      costTilesOpt: pricePerTile * optTotal,
+      costTiles: pricePerTile * (off ? off.buy : total),
+      costTilesOpt: pricePerTile * (off ? off.buy : optTotal),
     };
   }
 
@@ -517,7 +664,23 @@
       el.innerHTML = '<div class="error">⚠️ ' + r.error + "</div>";
       return;
     }
-    el.innerHTML = `
+    const head = r.off ? `
+      <div class="result-big">
+        <span>Platten kaufen (optimiert)</span><span class="value">${fmt(r.optTotal)}</span>
+      </div>
+      <div class="result-small"><span>Empfehlung inkl. 5 % Reserve</span><span class="value">${fmt(r.reserve)}</span></div>
+      <div class="result-small"><span>Reihen (1/3 versetzt)</span><span class="value">${fmt(r.ay.n)}</span></div>
+      <div class="result-small"><span>verlegte Stücke</span><span class="value">${fmt(r.off.pieces)}</span></div>
+      <div class="result-small"><span>davon ganze Platten</span><span class="value">${fmt(r.full)}</span></div>
+      <div class="result-small"><span>davon Zuschnitte</span><span class="value">${fmt(r.cut)}</span></div>
+      <div class="result-small"><span>ohne Restverwertung nötig</span><span class="value">${fmt(r.total)} Platten</span></div>
+      <div class="result-small"><span>Verschnitt (optimiert)</span><span class="value">${fmt(r.off.wastePct, 1)} %</span></div>
+      ${r.off.cutList.length ? `
+      <div class="result-small"><span>Schnittbreiten</span><span class="value">${r.off.cutList.map((c) => fmt(c.n) + "× " + fmt(c.w, 1)).join(" · ")} cm</span></div>` : ""}
+      <div class="result-big">
+        <span>Fugenkreuze (als T halbiert)</span><span class="value">${fmt(r.off.tInner)}</span>
+      </div>
+      <div class="result-small"><span>zusätzlich am Rand</span><span class="value">${fmt(r.off.tEdge)}</span></div>` : `
       <div class="result-big">
         <span>Platten gesamt</span><span class="value">${fmt(r.total)}</span>
       </div>
@@ -532,10 +695,12 @@
       <div class="result-big">
         <span>Optimiert (Reste verwenden)</span><span class="value">${fmt(r.optTotal)}</span>
       </div>
-      <div class="result-small"><span>Ersparnis gegenüber Standard</span><span class="value">${fmt(r.optSaved)} Platten</span></div>
+      <div class="result-small"><span>Ersparnis gegenüber Standard</span><span class="value">${fmt(r.optSaved)} Platten</span></div>`;
+    el.innerHTML = `
+      ${head}
       ${!r.suggestW && !r.suggestD ? `
-      <div class="result-small"><span>Ohne Zuschnitt</span><span class="value">Maße passen bereits ✓</span></div>` : `
-      <div class="result-big"><span>Terrassenmaß ohne Zuschnitt</span><span></span></div>
+      <div class="result-small"><span>${r.off ? "Maß-Optimierung" : "Ohne Zuschnitt"}</span><span class="value">Maße passen bereits ✓</span></div>` : `
+      <div class="result-big"><span>${r.off ? "Terrassenmaß für minimalen Verschnitt" : "Terrassenmaß ohne Zuschnitt"}</span><span></span></div>
       ${r.suggestW ? `
       <div class="result-small"><span>Breite</span><span class="value">
         <button class="mini" data-target="terraceW" data-value="${r.suggestW.down.m.toFixed(3)}" title="${fmt(r.suggestW.down.n)} Spalten">${fmtM(r.suggestW.down.m)}</button> oder
@@ -577,22 +742,28 @@
         <span>Kosten gesamt</span><span class="value">${fmt(r.costTiles + r.costBorder + r.costGravel + r.costChip, 2)} €</span>
       </div>
       ${r.pricePerTile > 0 ? `
-      <div class="result-small"><span>Preis pro Platte</span><span class="value">${fmt(r.pricePerTile, 2)} €</span></div>
+      <div class="result-small"><span>Preis pro Platte</span><span class="value">${fmt(r.pricePerTile, 2)} €</span></div>` + (r.off ? `
+      <div class="result-small"><span>Platten (${fmt(r.optTotal)} Stk.)</span><span class="value">${fmt(r.costTiles, 2)} €</span></div>` : `
       <div class="result-small"><span>Platten (${fmt(r.total)} Stk.)</span><span class="value">${fmt(r.costTiles, 2)} €</span></div>
-      <div class="result-small"><span>Platten optimiert (${fmt(r.optTotal)} Stk.)</span><span class="value">${fmt(r.costTilesOpt, 2)} €</span></div>` : ""}
+      <div class="result-small"><span>Platten optimiert (${fmt(r.optTotal)} Stk.)</span><span class="value">${fmt(r.costTilesOpt, 2)} €</span></div>`) : ""}
       ${r.costBorder > 0 ? `
       <div class="result-small"><span>Randsteine (${fmt(r.borderCount)} Stk.)</span><span class="value">${fmt(r.costBorder, 2)} €</span></div>` : ""}
       ${r.costGravel > 0 ? `
       <div class="result-small"><span>Schotter (${fmt(r.gravelTons, 1)} t)</span><span class="value">${fmt(r.costGravel, 2)} €</span></div>` : ""}
       ${r.costChip > 0 ? `
       <div class="result-small"><span>Splitt (${fmt(r.chipTons, 1)} t)</span><span class="value">${fmt(r.costChip, 2)} €</span></div>` : ""}
-      ${r.pricePerTile > 0 && r.optSaved > 0 ? `
+      ${r.pricePerTile > 0 && r.optSaved > 0 && !r.off ? `
       <div class="result-small"><span>Ersparnis optimiert</span><span class="value">${fmt(r.costTiles - r.costTilesOpt, 2)} €</span></div>` : ""}` : ""}
-      <div class="hint">Letzte Spalte: ${r.ax.cut ? "Zuschnitt auf " + fmt(r.ax.last, 1) + " cm" : "passt ohne Schnitt"} ·
+      <div class="hint">${r.off ? `Reihen im 1/3-Verband: Versatz ${fmt(v.tileW / 3, 1)} cm (Zyklus 0 · 1/3 · 2/3).
+        Stücke unter ${fmt(v.minPiece)} cm werden vermieden – am Reihenende werden dafür die letzte Platte
+        und der Rest auf zwei gleich breite Stücke aufgeteilt.
+        ${(() => { const d = r.off.rows.filter((x) => x.depthCut); return d.length === 0 ? "Die Reihen passen in der Tiefe ohne Schnitt." : d.length === 1 ? "Die letzte Reihe wird auf " + fmt(d[0].depth, 1) + " cm Tiefe geschnitten." : "Die letzten " + d.length + " Reihen werden auf je " + fmt(d[0].depth, 1) + " cm Tiefe geschnitten."; })()}
+        Die Kaufmenge verwertet Reststücke weiter (z. B. liefert eine Platte die Anfangsstücke 1/3 + 2/3);
+        Sägeverlust, Bruch und Fehlschnitte sind nicht enthalten – daher die Reserve einplanen.` : `Letzte Spalte: ${r.ax.cut ? "Zuschnitt auf " + fmt(r.ax.last, 1) + " cm" : "passt ohne Schnitt"} ·
         letzte Reihe: ${r.ay.cut ? "Zuschnitt auf " + fmt(r.ay.last, 1) + " cm" : "passt ohne Schnitt"}.
         Fugen sind auch zu Randsteinen und Hauswand berücksichtigt.
         Die optimierte Zahl geht davon aus, dass aus einer Platte mehrere Zuschnitte
-        geschnitten werden (ohne Sägeverlust) – Bruch und Fehlschnitte sind darin nicht enthalten.</div>
+        geschnitten werden (ohne Sägeverlust) – Bruch und Fehlschnitte sind darin nicht enthalten.`}</div>
     `;
   }
 
@@ -633,14 +804,27 @@
     // Platten (Ursprung: hinten links, innerhalb von Randsteinen und Randfugen)
     const x0 = t + r.edge;
     const y0 = v.joint; // Fuge zur Hauswand
-    for (let row = 0; row < r.ay.n; row++) {
-      const y = y0 + row * r.ay.pitch;
-      const h = row === r.ay.n - 1 ? r.ay.last : v.tileD;
-      for (let col = 0; col < r.ax.n; col++) {
-        const x = x0 + col * r.ax.pitch;
-        const w = col === r.ax.n - 1 ? r.ax.last : v.tileW;
-        const isCut = (col === r.ax.n - 1 && r.ax.cut) || (row === r.ay.n - 1 && r.ay.cut);
-        s += svgRect(x, y, w, h, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+    if (r.off) {
+      let y = y0;
+      for (const row of r.off.rows) {
+        let x = x0;
+        for (const w of row.widths) {
+          const isCut = row.depthCut || w < v.tileW - 0.05;
+          s += svgRect(x, y, w, row.depth, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+          x += w + v.joint;
+        }
+        y += row.depth + v.joint;
+      }
+    } else {
+      for (let row = 0; row < r.ay.n; row++) {
+        const y = y0 + row * r.ay.pitch;
+        const h = row === r.ay.n - 1 ? r.ay.last : v.tileD;
+        for (let col = 0; col < r.ax.n; col++) {
+          const x = x0 + col * r.ax.pitch;
+          const w = col === r.ax.n - 1 ? r.ax.last : v.tileW;
+          const isCut = (col === r.ax.n - 1 && r.ax.cut) || (row === r.ay.n - 1 && r.ay.cut);
+          s += svgRect(x, y, w, h, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+        }
       }
     }
 
@@ -698,11 +882,19 @@
 
     // Platten mit Fugen: der Schnitt durch die Tiefe zeigt die Reihen
     if (v.tileT > 0) {
-      for (let row = 0; row < r.ay.n; row++) {
-        const x = v.joint + row * r.ay.pitch;
-        const w = row === r.ay.n - 1 ? r.ay.last : v.tileD;
-        const isCut = row === r.ay.n - 1 && r.ay.cut;
-        s += band(x, x + w, 0, oTile, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+      if (r.off) {
+        let x = v.joint;
+        for (const row of r.off.rows) {
+          s += band(x, x + row.depth, 0, oTile, row.depthCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+          x += row.depth + v.joint;
+        }
+      } else {
+        for (let row = 0; row < r.ay.n; row++) {
+          const x = v.joint + row * r.ay.pitch;
+          const w = row === r.ay.n - 1 ? r.ay.last : v.tileD;
+          const isCut = row === r.ay.n - 1 && r.ay.cut;
+          s += band(x, x + w, 0, oTile, isCut ? "var(--tile-cut)" : "var(--tile)", "var(--tile-stroke)");
+        }
       }
     }
 
@@ -765,11 +957,13 @@
     renderViz(v, r);
     renderSection(v, r);
 
+    const offsetMode = $("pattern").value !== "grid";
+    $("minPiece").disabled = !offsetMode;
     const btn = $("noCutBtn");
     btn.disabled = !!r.error || (!r.suggestW && !r.suggestD);
     btn.textContent = btn.disabled && !r.error
-      ? "✓ Maße passen ohne Zuschnitt"
-      : "✂️ Maße anpassen – ohne Zuschnitt";
+      ? (offsetMode ? "✓ Maße optimal – minimaler Verschnitt" : "✓ Maße passen ohne Zuschnitt")
+      : (offsetMode ? "✂️ Maße anpassen – minimaler Verschnitt" : "✂️ Maße anpassen – ohne Zuschnitt");
   }
 
   // Breite und Tiefe auf das jeweils nächstgelegene schnittfreie Maß setzen
