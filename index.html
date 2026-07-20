@@ -4,103 +4,165 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Terrassenhelfer – Plattenrechner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f1ec;
-    --card: #ffffff;
-    --ink: #2b2a27;
-    --muted: #6f6a61;
-    --accent: #b3562e;
-    --tile: #ded6c8;
-    --tile-stroke: #b8ac98;
-    --tile-cut: #f0e3d2;
-    --border-stone: #8d8578;
-    --line: #e3ddd2;
-    --gravel: #b3aa9c;
-    --chip: #d8cfbe;
-    --soil: #a08258;
+    --bg: oklch(97% 0.012 75);
+    --card: oklch(99% 0.004 75);
+    --ink: oklch(23% 0.015 75);
+    --muted: oklch(48% 0.02 75);
+    --accent: oklch(56% 0.15 40);
+    --line: oklch(89% 0.014 75);
+    --tile: oklch(86% 0.02 75);
+    --tile-stroke: oklch(66% 0.02 75);
+    --tile-cut: oklch(92% 0.045 60);
+    --stone: oklch(55% 0.03 75);
+    --gravel: oklch(72% 0.015 75);
+    --chip: oklch(84% 0.02 75);
+    --soil: oklch(57% 0.06 60);
   }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  ::selection { background: oklch(55% 0.14 40 / 0.22); }
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0 auto;
+    max-width: 2200px;
+    min-height: 100vh;
+    font-family: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--ink);
     line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
   }
   header {
-    padding: 1.5rem 1rem 0.5rem;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 4vw, 3rem) 0.5rem;
+    animation: fadeUp .6s ease both;
   }
-  header h1 { margin: 0; font-size: 1.5rem; }
-  header p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  header h1 {
+    margin: 0;
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(1.6rem, 2.2vw, 2.15rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  header p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.95rem; }
+  .head-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
   .tabs {
     display: flex;
-    justify-content: center;
-    gap: 0.4rem;
-    margin-top: 0.75rem;
-  }
-  .tabs a {
-    padding: 0.3rem 0.9rem;
+    gap: 0.3rem;
+    background: var(--card);
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: var(--card);
+    padding: 0.25rem;
+  }
+  .tabs a {
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
     color: var(--muted);
     text-decoration: none;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color .2s;
   }
-  .tabs a:hover { color: var(--accent); border-color: var(--accent); }
-  .tabs a.active {
-    background: var(--accent);
+  .tabs a:hover { color: var(--accent); }
+  .tabs a.active { background: var(--accent); color: #fff; }
+  .config-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .25s ease, color .25s ease, box-shadow .25s ease, transform .25s ease;
+    box-shadow: 0 1px 2px oklch(0% 0 0 / 0.05);
+  }
+  .config-btn:hover {
     border-color: var(--accent);
-    color: #fff;
+    color: var(--accent);
+    box-shadow: 0 6px 18px oklch(0% 0 0 / 0.09);
+    transform: translateY(-1px);
   }
+  .config-btn .gear {
+    display: inline-block;
+    transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  body.config-open .config-btn .gear { transform: rotate(80deg); }
   main {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 1rem;
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1rem;
-    align-items: start;
-  }
-  @media (max-width: 800px) {
-    main { grid-template-columns: 1fr; }
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 1rem clamp(1.25rem, 4vw, 3rem) 1.5rem;
+    align-items: flex-start;
   }
   .card {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
+    border-radius: 20px;
+    padding: 1.5rem 1.6rem;
+    box-shadow: 0 1px 3px oklch(0% 0 0 / 0.04);
   }
-  .card h2 {
-    font-size: 0.8rem;
+  .results-card { flex: 1 1 360px; animation: fadeUp .6s .05s ease both; }
+  .col {
+    flex: 2 1 540px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .col .card { transition: box-shadow .3s ease; }
+  .col .card:hover { box-shadow: 0 10px 30px oklch(0% 0 0 / 0.08); }
+  .col .card:nth-child(1) { animation: fadeUp .6s .1s ease both; }
+  .col .card:nth-child(2) { animation: fadeUp .6s .15s ease both; }
+  .card h2, .drawer h2 {
+    font-size: 0.78rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: var(--muted);
-    margin: 0.5rem 0 0.5rem;
+    margin: 0.9rem 0 0.6rem;
   }
-  .card h2:first-child { margin-top: 0; }
+  .card h2:first-child { margin-top: 0; margin-bottom: 0.85rem; }
   .row {
     display: flex;
-    gap: 0.6rem;
-    margin-bottom: 0.6rem;
+    gap: 0.7rem;
+    margin-bottom: 0.65rem;
   }
   .field { flex: 1; }
   .field label {
     display: block;
     font-size: 0.78rem;
     color: var(--muted);
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.2rem;
   }
   .field input, .field select {
     width: 100%;
-    padding: 0.45rem 0.5rem;
+    padding: 0.5rem 0.6rem;
     font-size: 1rem;
+    font-family: inherit;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fdfcfa;
+    border-radius: 9px;
+    background: var(--bg);
     color: var(--ink);
+    transition: border-color .2s;
   }
   .field input:focus, .field select:focus {
     outline: 2px solid var(--accent);
@@ -109,18 +171,20 @@
   }
   .field input:disabled {
     color: var(--muted);
-    background: var(--bg);
+    opacity: 0.6;
   }
   button.swap {
     width: 100%;
-    padding: 0.4rem;
-    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    margin-bottom: 0.9rem;
+    font: inherit;
     font-size: 0.85rem;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fdfcfa;
+    border-radius: 9px;
+    background: var(--bg);
     color: var(--ink);
     cursor: pointer;
+    transition: all .2s;
   }
   button.swap:hover { border-color: var(--accent); color: var(--accent); }
   button.swap:disabled {
@@ -130,217 +194,191 @@
   }
   button.swap:disabled:hover { border-color: var(--line); color: var(--muted); }
   button.mini {
-    padding: 0.1rem 0.5rem;
+    padding: 0.15rem 0.6rem;
+    font: inherit;
     font-size: 0.85rem;
     border: 1px solid var(--line);
-    border-radius: 6px;
-    background: #fdfcfa;
+    border-radius: 8px;
+    background: var(--bg);
     color: var(--accent);
     font-weight: 600;
     cursor: pointer;
     font-variant-numeric: tabular-nums;
   }
   button.mini:hover { border-color: var(--accent); }
-  .results { margin-top: 0.5rem; }
+  .results { margin-top: 0; }
   .result-big {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 0.5rem 0;
+    padding: 0.6rem 0;
     border-top: 1px solid var(--line);
   }
+  .results > .result-big:first-child { border-top: none; padding-top: 0; }
   .result-big .value {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 1.55rem;
+    font-weight: 500;
     color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
   .result-small {
     display: flex;
     justify-content: space-between;
+    gap: 0.5rem;
     font-size: 0.85rem;
     color: var(--muted);
-    padding: 0.15rem 0;
+    padding: 0.22rem 0;
   }
-  .result-small .value { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .result-small .value {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
   .hint {
     font-size: 0.78rem;
     color: var(--muted);
-    margin-top: 0.75rem;
-    padding-top: 0.5rem;
+    margin-top: 0.9rem;
+    padding-top: 0.6rem;
     border-top: 1px solid var(--line);
+    line-height: 1.65;
   }
   .error {
     color: #a4302a;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     padding: 0.5rem 0;
   }
   #viz { width: 100%; }
-  #viz svg { width: 100%; height: auto; display: block; }
+  #viz svg, #section svg { width: 100%; height: auto; display: block; }
   .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 0.75rem;
-    font-size: 0.8rem;
+    gap: 1.25rem;
+    margin-top: 1rem;
+    font-size: 0.82rem;
     color: var(--muted);
   }
   .legend span {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
   }
   .legend i {
     width: 14px;
     height: 14px;
-    border-radius: 3px;
+    border-radius: 4px;
     display: inline-block;
     border: 1px solid var(--tile-stroke);
   }
-  .col { display: grid; gap: 1rem; align-items: start; }
-  #section svg { width: 100%; height: auto; display: block; }
-  .tips { grid-column: 1 / -1; }
+  .tips-wrap {
+    padding: 0 clamp(1.25rem, 4vw, 3rem) 2.5rem;
+    animation: fadeUp .6s .2s ease both;
+  }
+  .tips { padding: 1.5rem 1.75rem; }
+  .tips .tips-title {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
   .tips details { border-top: 1px solid var(--line); }
   .tips summary {
     cursor: pointer;
     font-weight: 600;
-    padding: 0.6rem 0;
+    padding: 0.7rem 0;
+    transition: color .2s;
   }
   .tips summary:hover { color: var(--accent); }
   .tips ul {
-    margin: 0 0 0.85rem;
+    margin: 0 0 1rem;
     padding-left: 1.4rem;
-    font-size: 0.9rem;
+    font-size: 0.92rem;
+    color: var(--muted);
+    line-height: 1.6;
   }
-  .tips li { margin-bottom: 0.3rem; }
+  .tips li { margin-bottom: 0.35rem; }
+  .tips li strong { color: var(--ink); }
   footer {
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     color: var(--muted);
-    padding: 1rem;
+    padding: 0 1rem 2rem;
   }
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: oklch(20% 0.02 75 / 0.4);
+    backdrop-filter: blur(3px);
+    z-index: 40;
+    animation: fadeIn .25s ease both;
+  }
+  body.config-open .overlay { display: block; }
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(460px, 92vw);
+    background: var(--card);
+    border-left: 1px solid var(--line);
+    box-shadow: -24px 0 60px oklch(0% 0 0 / 0.14);
+    z-index: 50;
+    transform: translateX(105%);
+    transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+    overflow-y: auto;
+    padding: 1.5rem 1.75rem 3rem;
+  }
+  body.config-open .drawer { transform: translateX(0); }
+  .drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    padding-top: 0.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .drawer-title {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+  .close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .close-btn:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🪨 Terrassenhelfer</h1>
-  <p>Plattenbedarf berechnen &amp; Verlegung visualisieren</p>
-  <nav class="tabs">
-    <a href="index.html" class="active">🪨 Plattenrechner</a>
-    <a href="ueberdachung.html">🏗️ Überdachung</a>
-  </nav>
+  <div>
+    <h1>🪨 Terrassenhelfer</h1>
+    <p>Plattenbedarf berechnen &amp; Verlegung visualisieren</p>
+  </div>
+  <div class="head-controls">
+    <nav class="tabs">
+      <a href="index.html" class="active">Plattenrechner</a>
+      <a href="ueberdachung.html">Überdachung</a>
+    </nav>
+    <button class="config-btn" id="configBtn" type="button"><span class="gear">⚙️</span> Konfiguration</button>
+  </div>
 </header>
 
 <main>
-  <div class="card">
-    <h2>Terrasse</h2>
-    <div class="row">
-      <div class="field">
-        <label for="terraceW">Breite (m)</label>
-        <input type="number" id="terraceW" value="5.10" step="0.01" min="0.1">
-      </div>
-      <div class="field">
-        <label for="terraceD">Tiefe (m)</label>
-        <input type="number" id="terraceD" value="4.55" step="0.01" min="0.1">
-      </div>
-    </div>
-    <button class="swap" id="noCutBtn" type="button">✂️ Maße anpassen – ohne Zuschnitt</button>
-
-    <h2>Platten</h2>
-    <div class="row">
-      <div class="field">
-        <label for="tileW">Breite (cm)</label>
-        <input type="number" id="tileW" value="120" step="0.1" min="1">
-      </div>
-      <div class="field">
-        <label for="tileD">Tiefe (cm)</label>
-        <input type="number" id="tileD" value="40" step="0.1" min="1">
-      </div>
-    </div>
-    <button class="swap" id="swapBtn" type="button">⇄ Platten um 90° drehen</button>
-    <div class="row">
-      <div class="field">
-        <label for="pattern">Verlegemuster</label>
-        <select id="pattern">
-          <option value="offset" selected>Versetzt · 1/3-Verband</option>
-          <option value="grid">Kreuzverband (Raster)</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label for="joint">Fugenbreite (mm)</label>
-        <input type="number" id="joint" value="3" step="0.5" min="0">
-      </div>
-      <div class="field">
-        <label for="minPiece">Mindeststück (cm)</label>
-        <input type="number" id="minPiece" value="20" step="1" min="0">
-      </div>
-    </div>
-
-    <h2>Randsteine (vorne, links &amp; rechts)</h2>
-    <div class="row">
-      <div class="field">
-        <label for="borderT">Dicke (cm)</label>
-        <input type="number" id="borderT" value="5" step="0.5" min="0">
-      </div>
-      <div class="field">
-        <label for="borderL">Länge pro Stein (cm)</label>
-        <input type="number" id="borderL" value="100" step="1" min="1">
-      </div>
-    </div>
-
-    <h2>Unterbau &amp; Gefälle</h2>
-    <div class="row">
-      <div class="field">
-        <label for="gravelT">Schotter (cm)</label>
-        <input type="number" id="gravelT" value="15" step="1" min="0">
-      </div>
-      <div class="field">
-        <label for="chipT">Splitt (cm)</label>
-        <input type="number" id="chipT" value="4" step="0.5" min="0">
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label for="tileT">Plattendicke (cm)</label>
-        <input type="number" id="tileT" value="2" step="0.5" min="0">
-      </div>
-      <div class="field">
-        <label for="slope">Gefälle (%)</label>
-        <input type="number" id="slope" value="2" step="0.5" min="0">
-      </div>
-    </div>
-
-    <h2>Preise (optional)</h2>
-    <div class="row">
-      <div class="field">
-        <label for="pricePiece">€ pro Platte</label>
-        <input type="number" id="pricePiece" step="0.01" min="0" placeholder="z. B. 12.50">
-      </div>
-      <div class="field">
-        <label for="priceM2">€ pro m² (alternativ)</label>
-        <input type="number" id="priceM2" step="0.01" min="0" placeholder="z. B. 39.90">
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label for="priceBorder">€ pro Randstein</label>
-        <input type="number" id="priceBorder" step="0.01" min="0" placeholder="z. B. 4.99">
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label for="priceGravel">€ pro t Schotter</label>
-        <input type="number" id="priceGravel" step="0.01" min="0" placeholder="z. B. 18.00">
-      </div>
-      <div class="field">
-        <label for="priceChip">€ pro t Splitt</label>
-        <input type="number" id="priceChip" step="0.01" min="0" placeholder="z. B. 45.00">
-      </div>
-    </div>
-
+  <div class="card results-card">
     <div class="results" id="results"></div>
   </div>
 
@@ -350,7 +388,7 @@
       <div class="legend">
         <span><i style="background:var(--tile)"></i> ganze Platte</span>
         <span><i style="background:var(--tile-cut)"></i> geschnittene Platte</span>
-        <span><i style="background:var(--border-stone); border-color:#6e675c"></i> Randstein</span>
+        <span><i style="background:var(--stone); border-color:oklch(40% 0.03 75)"></i> Randstein</span>
       </div>
     </div>
     <div class="card">
@@ -361,9 +399,11 @@
         und Regenwasser läuft vom Haus weg.</div>
     </div>
   </div>
+</main>
 
+<div class="tips-wrap">
   <div class="card tips">
-    <h2>Tipps &amp; Tricks für den Aufbau</h2>
+    <div class="tips-title">Tipps &amp; Tricks für den Aufbau</div>
     <details>
       <summary>📐 Messen &amp; Abstecken</summary>
       <ul>
@@ -403,9 +443,125 @@
       </ul>
     </details>
   </div>
-</main>
+</div>
 
 <footer>Hinten liegt die Hauswand – Randsteine kommen vorne, links und rechts.</footer>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="drawer-title">Konfiguration</div>
+    <button class="close-btn" id="closeBtn" type="button">✕</button>
+  </div>
+
+  <h2>Terrasse</h2>
+  <div class="row">
+    <div class="field">
+      <label for="terraceW">Breite (m)</label>
+      <input type="number" id="terraceW" value="5.10" step="0.01" min="0.1">
+    </div>
+    <div class="field">
+      <label for="terraceD">Tiefe (m)</label>
+      <input type="number" id="terraceD" value="4.55" step="0.01" min="0.1">
+    </div>
+  </div>
+  <button class="swap" id="noCutBtn" type="button">✂️ Maße anpassen – ohne Zuschnitt</button>
+
+  <h2>Platten</h2>
+  <div class="row">
+    <div class="field">
+      <label for="tileW">Breite (cm)</label>
+      <input type="number" id="tileW" value="120" step="0.1" min="1">
+    </div>
+    <div class="field">
+      <label for="tileD">Tiefe (cm)</label>
+      <input type="number" id="tileD" value="40" step="0.1" min="1">
+    </div>
+  </div>
+  <button class="swap" id="swapBtn" type="button">⇄ Platten um 90° drehen</button>
+  <div class="row">
+    <div class="field">
+      <label for="pattern">Verlegemuster</label>
+      <select id="pattern">
+        <option value="offset" selected>Versetzt · 1/3-Verband</option>
+        <option value="grid">Kreuzverband (Raster)</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="joint">Fugenbreite (mm)</label>
+      <input type="number" id="joint" value="3" step="0.5" min="0">
+    </div>
+    <div class="field">
+      <label for="minPiece">Mindeststück (cm)</label>
+      <input type="number" id="minPiece" value="20" step="1" min="0">
+    </div>
+  </div>
+
+  <h2>Randsteine (vorne, links &amp; rechts)</h2>
+  <div class="row">
+    <div class="field">
+      <label for="borderT">Dicke (cm)</label>
+      <input type="number" id="borderT" value="5" step="0.5" min="0">
+    </div>
+    <div class="field">
+      <label for="borderL">Länge pro Stein (cm)</label>
+      <input type="number" id="borderL" value="100" step="1" min="1">
+    </div>
+  </div>
+
+  <h2>Unterbau &amp; Gefälle</h2>
+  <div class="row">
+    <div class="field">
+      <label for="gravelT">Schotter (cm)</label>
+      <input type="number" id="gravelT" value="15" step="1" min="0">
+    </div>
+    <div class="field">
+      <label for="chipT">Splitt (cm)</label>
+      <input type="number" id="chipT" value="4" step="0.5" min="0">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="tileT">Plattendicke (cm)</label>
+      <input type="number" id="tileT" value="2" step="0.5" min="0">
+    </div>
+    <div class="field">
+      <label for="slope">Gefälle (%)</label>
+      <input type="number" id="slope" value="2" step="0.5" min="0">
+    </div>
+  </div>
+
+  <h2>Preise (optional)</h2>
+  <div class="row">
+    <div class="field">
+      <label for="pricePiece">€ pro Platte</label>
+      <input type="number" id="pricePiece" step="0.01" min="0" placeholder="z. B. 12.50">
+    </div>
+    <div class="field">
+      <label for="priceM2">€ pro m² (alternativ)</label>
+      <input type="number" id="priceM2" step="0.01" min="0" placeholder="z. B. 39.90">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="priceBorder">€ pro Randstein</label>
+      <input type="number" id="priceBorder" step="0.01" min="0" placeholder="z. B. 4.99">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="priceGravel">€ pro t Schotter</label>
+      <input type="number" id="priceGravel" step="0.01" min="0" placeholder="z. B. 18.00">
+    </div>
+    <div class="field">
+      <label for="priceChip">€ pro t Splitt</label>
+      <input type="number" id="priceChip" step="0.01" min="0" placeholder="z. B. 45.00">
+    </div>
+  </div>
+</aside>
 
 <script>
 (function () {
@@ -865,8 +1021,8 @@
     // Randsteine (hinten = y 0 ist Hauswand, vorne = y = D)
     const t = v.borderT;
     if (t > 0) {
-      const stone = "var(--border-stone)";
-      const stoneStroke = "#6e675c";
+      const stone = "var(--stone)";
+      const stoneStroke = "oklch(40% 0.03 75)";
       const L = v.borderL > 0 ? v.borderL : v.D;
       // links & rechts, in Einzelsteine unterteilt
       for (let y = 0; y < v.D - 0.01; y += L) {
@@ -956,9 +1112,9 @@
     const stoneX = v.borderT > 0 ? v.D - v.borderT : v.D;
 
     let s = "";
-    s += band(0, v.D, oGravel, oSoil, "var(--soil)", "#7d6644");
-    if (v.gravelT > 0) s += band(0, v.D, oChip, oGravel, "var(--gravel)", "#8f877a");
-    if (v.chipT > 0) s += band(0, stoneX, oTile, oChip, "var(--chip)", "#a99f8c");
+    s += band(0, v.D, oGravel, oSoil, "var(--soil)", "oklch(40% 0.06 60)");
+    if (v.gravelT > 0) s += band(0, v.D, oChip, oGravel, "var(--gravel)", "oklch(55% 0.02 75)");
+    if (v.chipT > 0) s += band(0, stoneX, oTile, oChip, "var(--chip)", "oklch(62% 0.02 75)");
 
     // Platten mit Fugen: der Schnitt durch die Tiefe zeigt die Reihen
     if (v.tileT > 0) {
@@ -980,14 +1136,14 @@
 
     // Randstein vorne, ragt bis in die Schotterschicht (Betonbett)
     if (v.borderT > 0) {
-      s += band(stoneX, v.D, 0, Math.min(oChip + 8, oSoil - 2), "var(--border-stone)", "#6e675c");
+      s += band(stoneX, v.D, 0, Math.min(oChip + 8, oSoil - 2), "var(--stone)", "oklch(40% 0.03 75)");
     }
 
     // Hauswand links
     const wallW = 14;
     const wallTop = -10 * k;
     const bottom = yAt(v.D, oSoil);
-    s += `<rect x="${-wallW}" y="${wallTop}" width="${wallW}" height="${(bottom - wallTop).toFixed(1)}" fill="#d8d2c6" stroke="#b0a898" stroke-width="0.6"/>`;
+    s += `<rect x="${-wallW}" y="${wallTop}" width="${wallW}" height="${(bottom - wallTop).toFixed(1)}" fill="oklch(85% 0.01 75)" stroke="oklch(70% 0.015 75)" stroke-width="0.6"/>`;
     s += `<text x="${-wallW / 2}" y="${(bottom / 2).toFixed(1)}" text-anchor="middle" font-size="13" fill="#6f6a61" transform="rotate(-90 ${-wallW / 2} ${(bottom / 2).toFixed(1)})">Hauswand</text>`;
 
     // Gefälle: Waagerechte ab Hinterkante als Referenz + Höhenversatz vorne
@@ -1013,7 +1169,7 @@
       const yFront = yAt(v.D, e.o);
       const yLabel = Math.max(yFront, prevY + 17);
       prevY = yLabel;
-      s += `<line x1="${v.D + 16}" y1="${yFront.toFixed(1)}" x2="${v.D + 34}" y2="${yLabel.toFixed(1)}" stroke="#b0a898" stroke-width="0.7"/>`;
+      s += `<line x1="${v.D + 16}" y1="${yFront.toFixed(1)}" x2="${v.D + 34}" y2="${yLabel.toFixed(1)}" stroke="oklch(70% 0.015 75)" stroke-width="0.7"/>`;
       s += `<text x="${v.D + 38}" y="${(yLabel + 4).toFixed(1)}" font-size="13" fill="#6f6a61">${e.label}</text>`;
     }
 
@@ -1045,6 +1201,12 @@
       ? (offsetMode ? "✓ Maße optimal – minimaler Verschnitt" : "✓ Maße passen ohne Zuschnitt")
       : (offsetMode ? "✂️ Maße anpassen – minimaler Verschnitt" : "✂️ Maße anpassen – ohne Zuschnitt");
   }
+
+  // Konfigurations-Schublade
+  const setConfig = (open) => document.body.classList.toggle("config-open", open);
+  $("configBtn").addEventListener("click", () => document.body.classList.toggle("config-open"));
+  $("closeBtn").addEventListener("click", () => setConfig(false));
+  $("overlay").addEventListener("click", () => setConfig(false));
 
   // Breite und Tiefe auf das jeweils nächstgelegene schnittfreie Maß setzen
   $("noCutBtn").addEventListener("click", () => {
