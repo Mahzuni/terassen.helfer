@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrassenhelfer – Überdachung mit Solarmodulen</title>
+<style>
+  :root {
+    --bg: #f4f1ec;
+    --card: #ffffff;
+    --ink: #2b2a27;
+    --muted: #6f6a61;
+    --accent: #b3562e;
+    --line: #e3ddd2;
+    --wood: #d9b98c;
+    --wood-stroke: #a8865a;
+    --wood-dark: #c9a26b;
+    --post: #b98d5e;
+    --glass: rgba(120, 160, 190, 0.45);
+    --glass-stroke: #6e93ac;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  header {
+    padding: 1.5rem 1rem 0.5rem;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  header p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+  }
+  .tabs a {
+    padding: 0.3rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+  }
+  .tabs a:hover { color: var(--accent); border-color: var(--accent); }
+  .tabs a.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0.5rem 0 0.5rem;
+  }
+  .card h2:first-child { margin-top: 0; }
+  .row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .field { flex: 1; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+  }
+  .field input {
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    font-size: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fdfcfa;
+    color: var(--ink);
+  }
+  .field input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+  button.mini {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fdfcfa;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  button.mini:hover { border-color: var(--accent); }
+  .results { margin-top: 0.5rem; }
+  .result-big {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .result-big .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .result-small {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 0.15rem 0;
+  }
+  .result-small .value { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .result-small .value.bad { color: #a4302a; font-weight: 700; }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .error {
+    color: #a4302a;
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+  }
+  .warnbox {
+    border: 1px solid #d9a05a;
+    background: #fbf1e2;
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+    margin: 0.5rem 0;
+  }
+  table.bom {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin: 0.3rem 0 0.5rem;
+  }
+  .bom th, .bom td {
+    text-align: left;
+    padding: 0.25rem 0.3rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .bom th { color: var(--muted); font-weight: 600; }
+  .bom td.num, .bom th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .bom tr.sum td { font-weight: 700; border-bottom: none; }
+  #topview svg, #sideview svg { width: 100%; height: auto; display: block; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .legend i {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1px solid var(--wood-stroke);
+  }
+  .col { display: grid; gap: 1rem; align-items: start; }
+  .tips { grid-column: 1 / -1; }
+  .tips details { border-top: 1px solid var(--line); }
+  .tips summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.6rem 0;
+  }
+  .tips summary:hover { color: var(--accent); }
+  .tips ul, .tips ol {
+    margin: 0 0 0.85rem;
+    padding-left: 1.4rem;
+    font-size: 0.9rem;
+  }
+  .tips li { margin-bottom: 0.3rem; }
+  .tips table.bom { max-width: 480px; }
+  footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏗️ Überdachung mit Solarmodulen</h1>
+  <p>Holzkonstruktion (BSH) mit Glas-Glas-Modulen planen: Raster, Stückliste &amp; Aufbauwissen</p>
+  <nav class="tabs">
+    <a href="index.html">🪨 Plattenrechner</a>
+    <a href="ueberdachung.html" class="active">🏗️ Überdachung</a>
+  </nav>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Überdachung</h2>
+    <div class="row">
+      <div class="field">
+        <label for="roofW">Breite (m)</label>
+        <input type="number" id="roofW" value="5.00" step="0.01" min="0.5">
+      </div>
+      <div class="field">
+        <label for="roofD">Tiefe (m)</label>
+        <input type="number" id="roofD" value="4.50" step="0.01" min="0.5">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="slope">Dachneigung (°)</label>
+        <input type="number" id="slope" value="5" step="0.5" min="0" max="30">
+      </div>
+      <div class="field">
+        <label for="clearH">Durchgangshöhe vorne (m)</label>
+        <input type="number" id="clearH" value="2.10" step="0.01" min="1.8">
+      </div>
+    </div>
+
+    <h2>Solarmodule (Glas-Glas)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="modW">Modulbreite (mm)</label>
+        <input type="number" id="modW" value="1100" step="1" min="300">
+      </div>
+      <div class="field">
+        <label for="modL">Modullänge (mm)</label>
+        <input type="number" id="modL" value="1700" step="1" min="300">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="modWeight">Gewicht (kg/Modul)</label>
+        <input type="number" id="modWeight" value="30" step="1" min="1">
+      </div>
+      <div class="field">
+        <label for="modGap">Fuge zw. Modulen (mm)</label>
+        <input type="number" id="modGap" value="20" step="1" min="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="minBear">Mindest-Auflage je Seite (mm)</label>
+        <input type="number" id="minBear" value="20" step="1" min="0">
+      </div>
+    </div>
+
+    <h2>Holzquerschnitte (mm)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="sparB">Sparren Breite</label>
+        <input type="number" id="sparB" value="80" step="10" min="40">
+      </div>
+      <div class="field">
+        <label for="sparH">Sparren Höhe</label>
+        <input type="number" id="sparH" value="180" step="10" min="80">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="fpB">Fußpfette Breite</label>
+        <input type="number" id="fpB" value="160" step="10" min="80">
+      </div>
+      <div class="field">
+        <label for="fpH">Fußpfette Höhe</label>
+        <input type="number" id="fpH" value="240" step="10" min="80">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="wpB">Wandpfette Breite</label>
+        <input type="number" id="wpB" value="120" step="10" min="60">
+      </div>
+      <div class="field">
+        <label for="wpH">Wandpfette Höhe</label>
+        <input type="number" id="wpH" value="160" step="10" min="60">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="postW">Pfosten (quadr.)</label>
+        <input type="number" id="postW" value="140" step="10" min="90">
+      </div>
+      <div class="field">
+        <label for="kbL">Kopfband Länge</label>
+        <input type="number" id="kbL" value="700" step="50" min="0">
+      </div>
+    </div>
+
+    <h2>Konstruktion</h2>
+    <div class="row">
+      <div class="field">
+        <label for="postInset">Pfosten-Einrückung (mm)</label>
+        <input type="number" id="postInset" value="500" step="10" min="0">
+      </div>
+      <div class="field">
+        <label for="overhang">Sparren-Überstand vorne (mm)</label>
+        <input type="number" id="overhang" value="0" step="10" min="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="kerve">Kervtiefe (mm)</label>
+        <input type="number" id="kerve" value="30" step="5" min="0">
+      </div>
+      <div class="field">
+        <label for="anchorSpacing">Wanddübel-Abstand (mm)</label>
+        <input type="number" id="anchorSpacing" value="800" step="50" min="200">
+      </div>
+    </div>
+
+    <h2>Preise (optional)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="priceWood">€ pro m³ BSH</label>
+        <input type="number" id="priceWood" step="1" min="0" placeholder="z. B. 950">
+      </div>
+      <div class="field">
+        <label for="priceModule">€ pro Modul</label>
+        <input type="number" id="priceModule" step="0.01" min="0" placeholder="z. B. 180">
+      </div>
+    </div>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2>Draufsicht (Sparren- &amp; Modulraster)</h2>
+      <div id="topview"></div>
+      <div class="legend">
+        <span><i style="background:var(--wood)"></i> Sparren</span>
+        <span><i style="background:var(--wood-dark)"></i> Pfette</span>
+        <span><i style="background:var(--post)"></i> Pfosten</span>
+        <span><i style="background:var(--glass); border-color:var(--glass-stroke)"></i> Solarmodul</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Seitenansicht (Schnitt durch die Tiefe)</h2>
+      <div id="sideview"></div>
+      <div class="hint">Hauswand links, Pfosten mit Fußpfette vorne. Maßstäblich –
+        die Sparren liegen mit Kerve auf beiden Pfetten auf, die Module auf den Sparren.</div>
+    </div>
+  </div>
+
+  <div class="card tips">
+    <h2>Wissensdatenbank: Tipps &amp; Aufbau</h2>
+
+    <details>
+      <summary>📋 Planung &amp; Genehmigung</summary>
+      <ul>
+        <li><strong>Baurecht prüfen:</strong> In Baden-Württemberg sind Terrassenüberdachungen bis 30 m² Fläche in der Regel verfahrensfrei (Anhang zu § 50 LBO BW) – die geplanten Maße liegen darunter. Trotzdem vor Baubeginn beim Baurechtsamt Leonberg bestätigen lassen, besonders wegen der Solarmodule und des Grenzabstands (i. d. R. 2,5 m zur Nachbargrenze).</li>
+        <li><strong>Schneelast:</strong> Warmbronn (Leonberg, PLZ 71229) liegt in Schneelastzone 2: charakteristische Bodenschneelast s<sub>k</sub> = 0,85 kN/m². Mit Formbeiwert μ₁ = 0,8 (Flachdach bis 30°) ergibt das ca. 0,68 kN/m² ≈ 69 kg/m² auf der Dachfläche – der Rechner links weist die Lasten aus.</li>
+        <li><strong>Statik bemessen lassen:</strong> Die Querschnitte hier (z. B. Sparren 80 × 180 mm bei ~4,5 m Spannweite) sind Vorschläge aus der Planung. Bei Glas-Glas-Modulen plus Schneelast ist die Durchbiegung der Sparren der kritische Nachweis – <strong>vor dem Holzkauf von Statiker, Zimmerei oder BSH-Händler rechnen lassen</strong> (viele Händler bieten das kostenlos an).</li>
+        <li><strong>Überkopfverglasung:</strong> Module über Aufenthaltsbereichen gelten als Überkopfverglasung – nur Glas-Glas-Module verwenden, die der Hersteller ausdrücklich dafür freigibt (VSG-artige Splitterbindung, geprüfte Resttragfähigkeit).</li>
+        <li><strong>Holzart:</strong> BSH (Brettschichtholz) GL24h, z. B. Fichte/Tanne – verzugsarm, maßhaltig und ideal, wenn die Kerven vorab abgebunden werden. Für sichtbare Qualität „Si“ (Sichtqualität) bestellen.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>🧱 Fundamente &amp; Pfosten</summary>
+      <ul>
+        <li><strong>Punktfundamente frostfrei gründen:</strong> mindestens 80 cm tief, ca. 40 × 40 cm im Querschnitt, Beton C25/30. Position der Pfosten liefert der Rechner (Einrückung von den Außenkanten).</li>
+        <li><strong>Pfostenträger aufgeständert einbetonieren</strong> (z. B. H-Anker oder höhenverstellbare Stützenfüße): der Pfosten steht so mindestens 3 cm über dem Boden und bekommt kein Spritzwasser ab – niemals Holz direkt einbetonieren.</li>
+        <li><strong>Höhenverstellbare Träger</strong> erleichtern das Ausrichten enorm: erst Fundamente gießen, dann die Pfosten millimetergenau in Höhe und Flucht justieren.</li>
+        <li><strong>Vor dem Terrassenbau setzen:</strong> Fundamente und Pfosten kommen vor Schotter- und Splittschicht der Terrasse (siehe Plattenrechner) – die Platten werden später um die Pfosten herum verlegt.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>🏠 Wandanschluss</summary>
+      <ul>
+        <li><strong>Wandpfette mit Abstandsmontage befestigen</strong> (z. B. Fischer Thermax): Die Gewindestange trägt durch die Dämmung hindurch ins Mauerwerk und trennt thermisch – Pflicht bei WDVS-Fassaden, sonst drohen Wärmebrücken und Feuchteschäden.</li>
+        <li><strong>Befestigungspunkte:</strong> im Abstand von ca. 800 mm über die Wandlänge (Anzahl rechnet der Rechner). Dübel-Eignung fürs eigene Mauerwerk (Ziegel/Poroton/Beton) beim Hersteller prüfen – bei Lochstein Injektionsmörtel mit Siebhülse.</li>
+        <li><strong>Abdichtung:</strong> Über dem Dachanschluss ein Wandanschlussprofil oder eine Anschlussschürze setzen, damit kein Wasser hinter die Konstruktion läuft. Fugen dauerelastisch schließen, nicht mit Bauschaum.</li>
+        <li><strong>Höhe:</strong> Die Oberkante der Wandpfette zeigt der Rechner an – vorher prüfen, dass Fenster, Rollladenkästen und Türstürze frei bleiben.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>🪚 Abbund &amp; Verbindungen</summary>
+      <ul>
+        <li><strong>Sparren auf den Pfetten ausklinken (Kerve):</strong> 25–30 mm tiefer Ausschnitt an beiden Auflagern für satte, flächige Auflage. Alle Kerven mit einer Schablone anreißen, dann sind alle Sparren identisch.</li>
+        <li><strong>Verschraubung Sparren:</strong> je Auflager 2 Tellerkopf-Holzbauschrauben (z. B. 8 × 280 mm) von oben, leicht schräg über Kreuz – zieht den Sparren in die Kerve.</li>
+        <li><strong>Fußpfette auf Pfosten – zwei Varianten:</strong> (A) Pfostenkopf ausklinken (Überblattung, z. B. 60 × 160 mm), die Pfette liegt satt auf und ist seitlich geführt – klassisch und sehr steif. (B) Stumpfer Stoß mit verdecktem Pfostenverbinder und Schwerlast-Vollgewindeschrauben von oben – schneller, unsichtbar.</li>
+        <li><strong>Kopfbänder unter 45°</strong> zwischen Pfosten und Fußpfette (je Pfosten in Längs- und Querrichtung) steifen die Konstruktion gegen seitliches Schwingen aus – nicht weglassen, sie ersetzen bei freistehenden Seiten die Wandscheibe.</li>
+        <li><strong>Holzschutz:</strong> Schnittflächen und Kerven vor der Montage streichen (konstruktiver Holzschutz geht vor chemischem: Hirnholz abdecken, Wasser ableiten).</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>⚡ Solarmodule (BIPV) montieren &amp; anmelden</summary>
+      <ul>
+        <li><strong>Verlegeprofile verwenden:</strong> Die Module liegen längsseitig auf Alu-Einlegeprofilen mit EPDM-Dichtlippen, die auf den Sparren verschraubt werden – Profil-System und Sparrenbreite müssen zusammenpassen. Die berechnete Auflagebreite je Modulseite links im Rechner mit den Vorgaben des Profilherstellers abgleichen (oft ≥ 20 mm gefordert).</li>
+        <li><strong>Dichtigkeit:</strong> Querstöße zwischen Modulreihen brauchen Querprofile oder Stufenfalz mit Dichtband – beim Systemanbieter das komplette Set (Längsprofile, Querprofile, Endkappen, Wandanschluss) anfragen.</li>
+        <li><strong>Verkabelung planen:</strong> Stecker (MC4) und Kabel laufen unter den Modulen entlang der Sparren – Kabelkanäle oder Clips vorsehen, bevor die Module liegen. UV-beständige Solarleitung verwenden, Leitungswege zum Wechselrichter kurz halten.</li>
+        <li><strong>Elektrik durch Fachbetrieb:</strong> Der Netzanschluss (AC-Seite) gehört in die Hände eines eingetragenen Elektrikers. Anlage beim Netzbetreiber (Netze BW) anmelden und im Marktstammdatenregister eintragen – auch kleine Anlagen sind meldepflichtig.</li>
+        <li><strong>Handling:</strong> Glas-Glas-Module nie an einer Ecke tragen oder auf Kante stellen; mit zwei Personen und Glassaugern arbeiten. Module erst montieren, wenn die Holzkonstruktion komplett ausgesteift ist.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>🔧 Aufbau-Reihenfolge</summary>
+      <ol>
+        <li><strong>Anzeichnen:</strong> Wandpfetten-Höhe an der Fassade markieren (Wert aus dem Rechner), Pfostenpositionen mit Schnurgerüst einmessen, Diagonalen prüfen.</li>
+        <li><strong>Fundamente:</strong> Punktfundamente ausheben, Pfostenträger einbetonieren, mindestens 1 Woche aushärten lassen.</li>
+        <li><strong>Wandpfette montieren:</strong> Bohrpunkte übertragen, Thermax setzen, Pfette ausrichten (Wasserwaage!) und festziehen.</li>
+        <li><strong>Pfosten stellen:</strong> auf die Träger schrauben, lotrecht ausrichten, provisorisch abstreben.</li>
+        <li><strong>Fußpfette auflegen</strong> und mit den Pfosten verbinden, Kopfbänder montieren – erst jetzt ist der Rahmen stabil.</li>
+        <li><strong>Sparren auflegen:</strong> mit den vorbereiteten Kerven auf beide Pfetten, Raster vom Rechner übernehmen, verschrauben.</li>
+        <li><strong>Verlegeprofile aufschrauben,</strong> Verkabelung vorbereiten, dann die Module reihenweise von unten nach oben einlegen.</li>
+        <li><strong>Abschlussarbeiten:</strong> Wandanschluss abdichten, Endkappen setzen, Elektriker für den Anschluss kommen lassen.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary>🖥️ Fusion-360-Parameter</summary>
+      <ul>
+        <li>Unter <em>Modify → Change Parameters</em> diese Parameter anlegen – die Werte spiegeln live die Eingaben des Rechners:</li>
+      </ul>
+      <table class="bom"><tbody id="fusionParams"></tbody></table>
+      <ul>
+        <li><strong>Komponenten:</strong> Jedes Holzteil als eigene Komponente anlegen („Pfosten“, „Sparren“, „Fusspfette“ …) – daraus lassen sich später Stückliste und Fertigungszeichnungen ableiten.</li>
+        <li><strong>Sparren vervielfältigen:</strong> Ersten Außensparren mit Neigung konstruieren, dann per <em>Rectangular Pattern</em> mit dem Achsmaß über die Breite kopieren.</li>
+      </ul>
+    </details>
+  </div>
+</main>
+
+<footer>Alle Angaben ohne Gewähr – Statik und Elektrik vor der Umsetzung fachlich prüfen lassen.</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const inputs = ["roofW", "roofD", "slope", "clearH",
+                  "modW", "modL", "modWeight", "modGap", "minBear",
+                  "sparB", "sparH", "fpB", "fpH", "wpB", "wpH", "postW", "kbL",
+                  "postInset", "overhang", "kerve", "anchorSpacing",
+                  "priceWood", "priceModule"];
+
+  const fmt = (n, digits = 0) =>
+    n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const fmtM = (m) =>
+    m.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " m";
+  const cmToMm = (cm) => fmt(cm * 10);
+
+  function readValues() {
+    const mm = (id) => parseFloat($(id).value) / 10; // mm → cm
+    const v = {
+      W: parseFloat($("roofW").value) * 100, // m → cm
+      D: parseFloat($("roofD").value) * 100,
+      slope: parseFloat($("slope").value),
+      clearH: parseFloat($("clearH").value) * 100,
+      modW: mm("modW"), modL: mm("modL"), modGap: mm("modGap"), minBear: mm("minBear"),
+      modWeight: parseFloat($("modWeight").value),
+      sparB: mm("sparB"), sparH: mm("sparH"),
+      fpB: mm("fpB"), fpH: mm("fpH"),
+      wpB: mm("wpB"), wpH: mm("wpH"),
+      postW: mm("postW"), kbL: mm("kbL"),
+      postInset: mm("postInset"), overhang: mm("overhang"),
+      kerve: mm("kerve"), anchorSpacing: mm("anchorSpacing"),
+    };
+    if (Object.values(v).some((x) => !isFinite(x) || x < 0)) return null;
+    if (v.W <= 0 || v.D <= 0 || v.modW <= 0 || v.modL <= 0 ||
+        v.sparB <= 0 || v.sparH <= 0 || v.postW <= 0 || v.slope >= 45) return null;
+    const opt = (id) => {
+      const x = parseFloat($(id).value);
+      return isFinite(x) && x > 0 ? x : 0;
+    };
+    v.priceWood = opt("priceWood");
+    v.priceModule = opt("priceModule");
+    return v;
+  }
+
+  function calc(v) {
+    const rad = (v.slope * Math.PI) / 180;
+    const cosS = Math.cos(rad);
+    const drop = v.D * Math.tan(rad); // Höhenversatz Wand → vorne, cm
+    const sparLen = v.D / cosS + v.overhang; // Schräglänge der Sparren, cm
+
+    // Sparrenraster aus dem Modulmaß: Achsabstand = Modulbreite + Fuge, die
+    // Module liegen beidseitig auf den Sparren auf. Was von der Breite übrig
+    // bleibt, wird als Rand links und rechts gleich verteilt.
+    const pitch = v.modW + v.modGap;
+    const nCols = Math.floor((v.W - v.sparB) / pitch + 1e-6);
+    if (nCols < 1) return { error: "Die Breite reicht nicht für eine Modulspalte – Modulbreite oder Dachbreite anpassen." };
+    const nSpar = nCols + 1;
+    const extent = nCols * pitch + v.sparB; // Außenkante erster bis letzter Sparren
+    const margin = (v.W - extent) / 2;
+    const bearing = (v.sparB - v.modGap) / 2; // Modulauflage je Seite, cm
+    const clearField = pitch - v.sparB; // lichte Weite zwischen den Sparren
+
+    // Modulreihen entlang der Schräge
+    const rowPitch = v.modL + v.modGap;
+    const rows = Math.floor((sparLen + v.modGap) / rowPitch + 1e-6);
+    if (rows < 1) return { error: "Ein Modul ist länger als das Dach tief – Modullänge oder Dachtiefe anpassen." };
+    const coverLen = rows * v.modL + (rows - 1) * v.modGap;
+    const restLen = sparLen - coverLen;
+    const nMod = nCols * rows;
+
+    // Passende Maße: Breite, bei der die Außensparren bündig mit der
+    // Dachkante abschließen; Tiefe, bei der die Modulreihen exakt aufgehen
+    const wFor = (n) => (n * pitch + v.sparB) / 100;
+    const suggestW = margin > 0.5 ? { down: { n: nCols, m: wFor(nCols) }, up: { n: nCols + 1, m: wFor(nCols + 1) } } : null;
+    const dFor = (r) => ((r * v.modL + (r - 1) * v.modGap - v.overhang) * cosS) / 100;
+    const suggestD = restLen > 0.5 ? { down: { n: rows, m: dFor(rows) }, up: { n: rows + 1, m: dFor(rows + 1) } } : null;
+
+    // Höhen (ab Oberkante Terrasse): Pfosten → Fußpfette → Sparren mit Kerve.
+    // Vereinfachung: gleiche Kervtiefe an beiden Auflagern.
+    const fpTop = v.clearH + v.fpH;
+    const rafterBotFront = fpTop - v.kerve;
+    const wpTop = rafterBotFront + drop;
+    const topAtWall = wpTop + v.sparH / cosS; // Oberkante Sparren an der Wand
+
+    // Stückliste (Maße in cm, Volumen in m³)
+    const vol = (p) => (p.n * p.b * p.h * p.l) / 1e6;
+    const parts = [
+      { name: "Wandpfette", n: 1, b: v.wpB, h: v.wpH, l: v.W },
+      { name: "Fußpfette", n: 1, b: v.fpB, h: v.fpH, l: v.W },
+      { name: "Pfosten", n: 2, b: v.postW, h: v.postW, l: v.clearH },
+      { name: "Sparren", n: nSpar, b: v.sparB, h: v.sparH, l: sparLen },
+    ];
+    if (v.kbL > 0) parts.push({ name: "Kopfband (45°)", n: 4, b: 12, h: 12, l: v.kbL });
+    const woodM3 = parts.reduce((s, p) => s + vol(p), 0);
+    const woodKg = woodM3 * 420; // BSH GL24h, mittlere Rohdichte ~420 kg/m³
+
+    // Befestigung
+    const anchors = Math.max(2, Math.floor(v.W / v.anchorSpacing) + 1);
+    const screws = nSpar * 4; // 2 je Auflager
+    const kbCount = v.kbL > 0 ? 4 : 0;
+
+    // Lasten – überschlägig, auf die Grundfläche bezogen (bei 5° Neigung
+    // praktisch identisch mit der Dachfläche). Schneelastzone 2: sk 0,85 kN/m²,
+    // Formbeiwert 0,8 → ~69 kg/m².
+    const areaPlan = (v.W * v.D) / 1e4; // m²
+    const areaRoof = (v.W * sparLen) / 1e4;
+    const snowKgM2 = 0.85 * 0.8 * 101.97;
+    const deadKgM2 = (woodKg + nMod * v.modWeight) / areaPlan;
+    const totalKg = (deadKgM2 + snowKgM2) * areaPlan;
+    const perSparKg = (deadKgM2 + snowKgM2) * (pitch / 100) * (v.D / 100);
+    const perPostKg = totalKg / 4; // vordere Pfette trägt ~die Hälfte, 2 Pfosten
+
+    const costWood = v.priceWood * woodM3;
+    const costModules = v.priceModule * nMod;
+
+    return {
+      drop, sparLen, cosS,
+      pitch, nCols, nSpar, extent, margin, bearing, clearField,
+      bearingOk: bearing >= v.minBear - 1e-6,
+      rows, coverLen, restLen, nMod,
+      suggestW, suggestD,
+      fpTop, rafterBotFront, wpTop, topAtWall,
+      parts, vol, woodM3, woodKg,
+      anchors, screws, kbCount,
+      areaPlan, areaRoof, snowKgM2, deadKgM2, totalKg, perSparKg, perPostKg,
+      costWood, costModules,
+    };
+  }
+
+  function renderResults(v, r) {
+    const el = $("results");
+    if (r.error) {
+      el.innerHTML = '<div class="error">⚠️ ' + r.error + "</div>";
+      return;
+    }
+    const dims = (p) => cmToMm(p.b) + " × " + cmToMm(p.h) + " × " + fmt(p.l * 10);
+    const bomRows = r.parts.map((p) => `
+      <tr><td>${p.name}</td><td class="num">${p.n}</td><td class="num">${dims(p)}</td><td class="num">${fmt(r.vol(p), 3)}</td></tr>`).join("");
+    el.innerHTML = `
+      <div class="result-big">
+        <span>Solarmodule</span><span class="value">${fmt(r.nMod)}</span>
+      </div>
+      <div class="result-small"><span>Raster (Spalten × Reihen)</span><span class="value">${fmt(r.nCols)} × ${fmt(r.rows)}</span></div>
+      <div class="result-big">
+        <span>Sparren</span><span class="value">${fmt(r.nSpar)}</span>
+      </div>
+      <div class="result-small"><span>Achsmaß (Sparrenraster)</span><span class="value">${cmToMm(r.pitch)} mm</span></div>
+      <div class="result-small"><span>lichte Weite zwischen Sparren</span><span class="value">${cmToMm(r.clearField)} mm</span></div>
+      <div class="result-small"><span>Rand außen (je Seite)</span><span class="value">${cmToMm(r.margin)} mm</span></div>
+      <div class="result-small"><span>Modulauflage je Seite</span><span class="value${r.bearingOk ? "" : " bad"}">${cmToMm(r.bearing)} mm${r.bearingOk ? "" : " ⚠"}</span></div>
+      ${r.bearingOk ? "" : `<div class="warnbox">⚠️ Die Auflage liegt unter dem Mindestmaß von ${cmToMm(v.minBear)} mm –
+        breitere Sparren wählen, die Modulfuge verkleinern oder das Klemm-/Profilsystem prüfen.</div>`}
+      ${r.restLen > 0.5 ? `
+      <div class="result-small"><span>Rest hinter letzter Modulreihe</span><span class="value">${fmt(r.restLen, 1)} cm</span></div>` : ""}
+      ${!r.suggestW && !r.suggestD ? `
+      <div class="result-small"><span>Maß-Check</span><span class="value">Raster geht exakt auf ✓</span></div>` : `
+      <div class="result-big"><span>Dachmaß passend zum Modulraster</span><span></span></div>
+      ${r.suggestW ? `
+      <div class="result-small"><span>Breite</span><span class="value">
+        <button class="mini" data-target="roofW" data-value="${r.suggestW.down.m.toFixed(3)}" title="${fmt(r.suggestW.down.n)} Modulspalten">${fmtM(r.suggestW.down.m)}</button> oder
+        <button class="mini" data-target="roofW" data-value="${r.suggestW.up.m.toFixed(3)}" title="${fmt(r.suggestW.up.n)} Modulspalten">${fmtM(r.suggestW.up.m)}</button>
+      </span></div>` : `
+      <div class="result-small"><span>Breite</span><span class="value">passt bereits ✓</span></div>`}
+      ${r.suggestD ? `
+      <div class="result-small"><span>Tiefe</span><span class="value">
+        <button class="mini" data-target="roofD" data-value="${r.suggestD.down.m.toFixed(3)}" title="${fmt(r.suggestD.down.n)} Modulreihen">${fmtM(r.suggestD.down.m)}</button> oder
+        <button class="mini" data-target="roofD" data-value="${r.suggestD.up.m.toFixed(3)}" title="${fmt(r.suggestD.up.n)} Modulreihen">${fmtM(r.suggestD.up.m)}</button>
+      </span></div>` : `
+      <div class="result-small"><span>Tiefe</span><span class="value">passt bereits ✓</span></div>`}
+      <div class="result-small"><span></span><span>Klick übernimmt das Maß</span></div>`}
+      <div class="result-big">
+        <span>Höhenversatz (${fmt(v.slope, 1)}°)</span><span class="value">${fmt(r.drop, 1)} cm</span>
+      </div>
+      <div class="result-small"><span>Sparrenlänge (Schräge)</span><span class="value">${fmt(r.sparLen / 100, 3)} m</span></div>
+      <div class="result-small"><span>Oberkante Wandpfette</span><span class="value">${fmt(r.wpTop / 100, 2)} m</span></div>
+      <div class="result-small"><span>Oberkante Sparren an der Wand</span><span class="value">${fmt(r.topAtWall / 100, 2)} m</span></div>
+      <div class="result-small"><span>Dachfläche (schräg)</span><span class="value">${fmt(r.areaRoof, 1)} m²</span></div>
+      <div class="result-big">
+        <span>Holz (BSH GL24h)</span><span class="value">${fmt(r.woodM3, 2)} m³</span>
+      </div>
+      <table class="bom">
+        <tr><th>Bauteil</th><th class="num">Stk</th><th class="num">B × H × L (mm)</th><th class="num">m³</th></tr>
+        ${bomRows}
+        <tr class="sum"><td>Summe</td><td></td><td class="num">≈ ${fmt(r.woodKg)} kg</td><td class="num">${fmt(r.woodM3, 3)}</td></tr>
+      </table>
+      <div class="result-big">
+        <span>Befestigung</span><span></span>
+      </div>
+      <div class="result-small"><span>Wandanker (z. B. Thermax)</span><span class="value">${fmt(r.anchors)} Stk</span></div>
+      <div class="result-small"><span>Tellerkopfschrauben 8 × 280</span><span class="value">${fmt(r.screws)} Stk</span></div>
+      <div class="result-small"><span>Pfostenträger</span><span class="value">2 Stk</span></div>
+      ${r.kbCount ? `<div class="result-small"><span>Kopfbänder</span><span class="value">${fmt(r.kbCount)} Stk</span></div>` : ""}
+      <div class="result-big">
+        <span>Lasten (überschlägig)</span><span></span>
+      </div>
+      <div class="result-small"><span>Eigengewicht Dach</span><span class="value">${fmt(r.deadKgM2, 1)} kg/m²</span></div>
+      <div class="result-small"><span>Schnee (Zone 2, μ 0,8)</span><span class="value">${fmt(r.snowKgM2, 0)} kg/m²</span></div>
+      <div class="result-small"><span>je Sparren (voll belegt)</span><span class="value">≈ ${fmt(r.perSparKg)} kg</span></div>
+      <div class="result-small"><span>je Pfosten</span><span class="value">≈ ${fmt(r.perPostKg)} kg</span></div>
+      <div class="warnbox">🧮 <strong>Keine Statik-Berechnung!</strong> Die Lastwerte sind nur eine Orientierung
+        für das Gespräch mit Statiker oder BSH-Händler. Sparren- und Pfettenquerschnitte vor dem Kauf
+        bemessen lassen – kritisch ist die Durchbiegung der Sparren unter Modul- und Schneelast.</div>
+      ${r.costWood > 0 || r.costModules > 0 ? `
+      <div class="result-big">
+        <span>Kosten</span><span class="value">${fmt(r.costWood + r.costModules, 2)} €</span>
+      </div>
+      ${r.costWood > 0 ? `<div class="result-small"><span>Holz (${fmt(r.woodM3, 2)} m³)</span><span class="value">${fmt(r.costWood, 2)} €</span></div>` : ""}
+      ${r.costModules > 0 ? `<div class="result-small"><span>Module (${fmt(r.nMod)} Stk)</span><span class="value">${fmt(r.costModules, 2)} €</span></div>` : ""}
+      <div class="result-small"><span></span><span>ohne Profile, Schrauben, Fundamente, Elektrik</span></div>` : ""}
+      <div class="hint">Das Sparrenraster folgt dem Modulmaß: Achsabstand = Modulbreite + Fuge,
+        jedes Modul liegt beidseitig ${cmToMm(r.bearing)} mm auf den Sparren auf. Der Rest der
+        Dachbreite verteilt sich als Rand auf beide Seiten. Sägeverschnitt, Verlegeprofile und
+        Kleinteile sind in Stückliste und Kosten nicht enthalten.</div>`;
+  }
+
+  function svgRect(x, y, w, h, fill, stroke) {
+    return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="0.6"/>`;
+  }
+
+  // Maßkette mit Endstrichen und Beschriftung (horizontal oder vertikal)
+  function dimH(x1, x2, y, label) {
+    return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#8a8478" stroke-width="0.8"/>
+      <line x1="${x1}" y1="${y - 4}" x2="${x1}" y2="${y + 4}" stroke="#8a8478" stroke-width="0.8"/>
+      <line x1="${x2}" y1="${y - 4}" x2="${x2}" y2="${y + 4}" stroke="#8a8478" stroke-width="0.8"/>
+      <text x="${(x1 + x2) / 2}" y="${y - 6}" text-anchor="middle" font-size="14" fill="#6f6a61">${label}</text>`;
+  }
+  function dimV(x, y1, y2, label) {
+    const my = (y1 + y2) / 2;
+    return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#8a8478" stroke-width="0.8"/>
+      <line x1="${x - 4}" y1="${y1}" x2="${x + 4}" y2="${y1}" stroke="#8a8478" stroke-width="0.8"/>
+      <line x1="${x - 4}" y1="${y2}" x2="${x + 4}" y2="${y2}" stroke="#8a8478" stroke-width="0.8"/>
+      <text x="${x - 6}" y="${my}" text-anchor="middle" font-size="14" fill="#6f6a61" transform="rotate(-90 ${x - 6} ${my})">${label}</text>`;
+  }
+
+  // Draufsicht: Breite horizontal, Tiefe vertikal (Hauswand oben wie beim
+  // Plattenrechner). Module halbtransparent über den Sparren.
+  function renderTop(v, r) {
+    const el = $("topview");
+    if (r.error) { el.innerHTML = ""; return; }
+    const D = v.D + v.overhang * r.cosS; // projizierte Länge inkl. Überstand
+    let s = "";
+
+    // Pfetten: Wandpfette oben (an der Hauswand), Fußpfette an der Vorderkante
+    s += svgRect(0, 0, v.W, v.wpB, "var(--wood-dark)", "var(--wood-stroke)");
+    s += svgRect(0, v.D - v.fpB, v.W, v.fpB, "var(--wood-dark)", "var(--wood-stroke)");
+
+    // Pfosten (unter der Fußpfette, gestrichelt da verdeckt)
+    const py = v.D - v.fpB / 2 - v.postW / 2;
+    for (const cx of [v.postInset, v.W - v.postInset]) {
+      s += `<rect x="${(cx - v.postW / 2).toFixed(2)}" y="${py.toFixed(2)}" width="${v.postW}" height="${v.postW}" fill="var(--post)" stroke="#7d6644" stroke-width="0.8" stroke-dasharray="4 3"/>`;
+    }
+
+    // Sparren
+    for (let i = 0; i < r.nSpar; i++) {
+      const x = r.margin + i * r.pitch;
+      s += svgRect(x, 0, v.sparB, D, "var(--wood)", "var(--wood-stroke)");
+    }
+
+    // Module (Projektion; erste Reihe an der Wand beginnend)
+    for (let c = 0; c < r.nCols; c++) {
+      const x = r.margin + v.sparB / 2 + v.modGap / 2 + c * r.pitch;
+      for (let row = 0; row < r.rows; row++) {
+        const y = row * (v.modL + v.modGap) * r.cosS;
+        s += svgRect(x, y, v.modW, v.modL * r.cosS, "var(--glass)", "var(--glass-stroke)");
+      }
+    }
+
+    // Bemaßung: Breite, Tiefe, Achsmaß, Pfostenposition
+    s += dimH(0, v.W, -20, fmt(v.W / 100, 2) + " m");
+    s += dimV(-20, 0, v.D, fmt(v.D / 100, 2) + " m");
+    const a0 = r.margin + v.sparB / 2;
+    s += dimH(a0, a0 + r.pitch, D + 24, "Achsmaß " + cmToMm(r.pitch) + " mm");
+    s += `<text x="${v.W / 2}" y="${-42}" text-anchor="middle" font-size="14" fill="#6f6a61">Hauswand (hinten)</text>`;
+    s += `<text x="${v.W / 2}" y="${D + 52}" text-anchor="middle" font-size="14" fill="#6f6a61">vorne</text>`;
+
+    const pad = 46;
+    el.innerHTML = `<svg viewBox="${-pad} ${-pad - 12} ${v.W + pad * 1.6} ${D + pad * 2.3}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Draufsicht auf Sparren- und Modulraster">${s}</svg>`;
+  }
+
+  // Seitenansicht (maßstäblich): Hauswand links bei x=0, Vorderkante bei x=D.
+  // Interne y-Achse zeigt nach oben (ab Terrassen-Oberkante), fürs SVG wird
+  // am Ende gespiegelt.
+  function renderSide(v, r) {
+    const el = $("sideview");
+    if (r.error) { el.innerHTML = ""; return; }
+    const top = r.topAtWall + 6; // etwas Luft über den Modulen
+    const Y = (y) => (top - y).toFixed(1); // y-oben → SVG
+    const rect = (x, y, w, h, fill, stroke, extra = "") =>
+      `<rect x="${x.toFixed(1)}" y="${Y(y + h)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="0.8"${extra}/>`;
+
+    const wallW = 16;
+    const ovX = v.overhang * r.cosS;
+    let s = "";
+
+    // Boden & Hauswand
+    s += `<line x1="${-wallW}" y1="${Y(0)}" x2="${v.D + ovX + 30}" y2="${Y(0)}" stroke="#8a8478" stroke-width="1"/>`;
+    s += rect(-wallW, 0, wallW, top, "#d8d2c6", "#b0a898");
+    s += `<text x="${-wallW / 2}" y="${Y(top / 2)}" text-anchor="middle" font-size="13" fill="#6f6a61" transform="rotate(-90 ${-wallW / 2} ${Y(top / 2)})">Hauswand</text>`;
+
+    // Wandpfette an der Wand, Pfosten + Fußpfette vorne
+    s += rect(0, r.wpTop - v.wpH, v.wpB, v.wpH, "var(--wood-dark)", "var(--wood-stroke)");
+    const fpX = v.D - v.fpB;
+    s += rect(fpX + (v.fpB - v.postW) / 2, 0, v.postW, v.clearH, "var(--post)", "#7d6644");
+    s += rect(fpX, v.clearH, v.fpB, v.fpH, "var(--wood-dark)", "var(--wood-stroke)");
+
+    // Sparren: Unterkante läuft von (0, wpTop) nach (D, rafterBotFront), mit
+    // Überstand darüber hinaus. Dicke = Sparrenhöhe senkrecht zur Achse.
+    const t = v.sparH / r.cosS;
+    const x1 = 0, y1 = r.wpTop;
+    const x2 = v.D + ovX, y2 = r.rafterBotFront - v.overhang * Math.sin((v.slope * Math.PI) / 180);
+    const poly = (o1, o2, fill, stroke) =>
+      `<polygon points="${x1},${Y(y1 + o1)} ${x2},${Y(y2 + o1)} ${x2},${Y(y2 + o2)} ${x1},${Y(y1 + o2)}" fill="${fill}" stroke="${stroke}" stroke-width="0.8"/>`;
+    s += poly(0, t, "var(--wood)", "var(--wood-stroke)");
+    s += poly(t, t + 3, "var(--glass)", "var(--glass-stroke)"); // Module (~3 cm mit Profil)
+    s += `<text x="${(v.D / 2).toFixed(1)}" y="${(parseFloat(Y((y1 + y2) / 2 + t)) - 8).toFixed(1)}" text-anchor="middle" font-size="13" fill="#6f6a61">Sparren ${fmt(r.sparLen / 100, 2)} m · Module</text>`;
+
+    // Bemaßung: Durchgangshöhe vorne, Höhenversatz an der Wand, Tiefe unten
+    s += dimV(v.D + ovX + 20, parseFloat(Y(0)), parseFloat(Y(v.clearH)), fmt(v.clearH / 100, 2) + " m");
+    s += dimV(v.D + ovX + 20, parseFloat(Y(r.rafterBotFront)), parseFloat(Y(r.wpTop)), "Δ " + fmt(r.drop, 0) + " cm");
+    s += `<line x1="0" y1="${Y(r.rafterBotFront)}" x2="${v.D + ovX + 16}" y2="${Y(r.rafterBotFront)}" stroke="#8a8478" stroke-width="0.7" stroke-dasharray="6 5"/>`;
+    s += dimH(0, v.D, parseFloat(Y(0)) + 22, fmt(v.D / 100, 2) + " m");
+    s += `<text x="${(v.wpB + 6).toFixed(1)}" y="${(parseFloat(Y(r.wpTop)) + 14).toFixed(1)}" font-size="13" fill="#6f6a61">OK Wandpfette ${fmt(r.wpTop / 100, 2)} m</text>`;
+
+    const vbX = -wallW - 8;
+    const vbW = wallW + 8 + v.D + ovX + 105;
+    const vbH = top + 46;
+    el.innerHTML = `<svg viewBox="${vbX} -6 ${vbW.toFixed(1)} ${vbH.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Seitenansicht der Überdachung">${s}</svg>`;
+  }
+
+  function renderFusion(v, r) {
+    const el = $("fusionParams");
+    if (r.error) { el.innerHTML = ""; return; }
+    const rows = [
+      ["Breite", fmt(v.W * 10) + " mm"],
+      ["Tiefe", fmt(v.D * 10) + " mm"],
+      ["Dachneigung", fmt(v.slope, 1) + " deg"],
+      ["Durchgangshoehe", fmt(v.clearH * 10) + " mm"],
+      ["Sparren_Breite", cmToMm(v.sparB) + " mm"],
+      ["Sparren_Hoehe", cmToMm(v.sparH) + " mm"],
+      ["Achsmass", cmToMm(r.pitch) + " mm"],
+      ["Rand_Aussen", cmToMm(r.margin) + " mm"],
+      ["Pfosten_Einrueckung", cmToMm(v.postInset) + " mm"],
+      ["Modul_Breite", cmToMm(v.modW) + " mm"],
+      ["Modul_Laenge", cmToMm(v.modL) + " mm"],
+      ["Kervtiefe", cmToMm(v.kerve) + " mm"],
+    ];
+    el.innerHTML = rows.map(([n, val]) =>
+      `<tr><td><code>${n}</code></td><td class="num">${val}</td></tr>`).join("");
+  }
+
+  function update() {
+    const v = readValues();
+    if (!v) {
+      $("results").innerHTML = '<div class="error">⚠️ Bitte gültige Werte eingeben.</div>';
+      $("topview").innerHTML = "";
+      $("sideview").innerHTML = "";
+      $("fusionParams").innerHTML = "";
+      return;
+    }
+    const r = calc(v);
+    renderResults(v, r);
+    renderTop(v, r);
+    renderSide(v, r);
+    renderFusion(v, r);
+  }
+
+  inputs.forEach((id) => $(id).addEventListener("input", update));
+
+  // Klick auf ein vorgeschlagenes Maß übernimmt es ins Eingabefeld
+  $("results").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-target]");
+    if (!btn) return;
+    $(btn.dataset.target).value = btn.dataset.value;
+    update();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

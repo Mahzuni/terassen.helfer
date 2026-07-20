@@ -1,10 +1,17 @@
 # Terrassenhelfer
 
-Kleiner Plattenrechner für die Terrasse (5,10 m × 4,55 m als Voreinstellung):
-Plattengröße, Fugenbreite und Randstein-Dicke eingeben – die App zeigt den
-Verlegeplan und berechnet die benötigte Anzahl an Platten und Randsteinen.
+Zwei kleine Planungshelfer für den Terrassenbau – ohne Abhängigkeiten,
+einfach im Browser öffnen:
 
-Eine einzelne `index.html` ohne Abhängigkeiten – einfach im Browser öffnen.
+- **`index.html` – Plattenrechner** (5,10 m × 4,55 m als Voreinstellung):
+  Plattengröße, Fugenbreite und Randstein-Dicke eingeben – die App zeigt den
+  Verlegeplan und berechnet die benötigte Anzahl an Platten und Randsteinen,
+  dazu Unterbau-Mengen und Schichtaufbau.
+- **`ueberdachung.html` – Überdachung mit Solarmodulen**: Holzkonstruktion
+  (BSH) mit Glas-Glas-Modulen parametrisch planen – Sparrenraster aus dem
+  Modulmaß, Stückliste, Draufsicht und Seitenansicht, Lasten-Übersicht und
+  eine Wissensdatenbank mit Tipps für Genehmigung, Fundamente, Wandanschluss,
+  Abbund und Modulmontage.
 
 ## Auf GitHub Pages veröffentlichen
 
